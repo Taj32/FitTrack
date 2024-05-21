@@ -1,46 +1,100 @@
-// Entry points for node js application
-// using express.js
-const express = require('express')
+const express = require("express");
+const cors = require("cors");
+const cookieSession = require("cookie-session");
+const mongoose = require('mongoose');
+
+const dbConfig = require("./app/config/db.config");
+
 const app = express();
 
-//create the server
-app.get('/', (req, res) => {
-    res.send('<h1>Hello, Node.js HTTP Server!!!</h1>');
+var corsOptions = {
+    origin: "http://localhost:8081"
+  };
+  
+app.use(cors(corsOptions));
+
+// parse requests of content-type - application/json
+app.use(express.json());
+
+// parse requests of content-type - application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true }));
+
+app.use(
+  cookieSession({
+    name: "bezkoder-session",
+    keys: ["COOKIE_SECRET"], // should use as secret environment variable
+    httpOnly: true
+  })
+);
+
+const db = require("./app/models");
+const Role = db.role;
+
+const mongoURI = 
+
+db.mongoose
+    .connect(mongoURI, {
+
+  //.connect(`mongodb://Taj:Chahal1969@${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
+  .then(() => {
+    console.log("Successfully connect to MongoDB.");
+    initial();
+  })
+  .catch(err => {
+    console.error("Connection error!!!", err);
+    process.exit();
+  });
+
+// simple route
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to bezkoder application." });
 });
 
-// Include route files
-const usersRoute = require('./routes/users');
-const productsRoute = require('./routes/products');
+// routes
+require("./app/routes/auth.routes")(app);
+require("./app/routes/user.routes")(app);
 
-// Use routes
-app.use('/users', usersRoute);
-app.use('/products', productsRoute);
-
-const port = process.env.PORT || 3000;
-
-//start the server
-app.listen(port, () => {
-    console.log(`Node.js HTTP server is running on port ${port}`); //note the backtick
+// set port, listen for requests
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}.`);
 });
 
+function initial() {
+  Role.estimatedDocumentCount((err, count) => {
+    if (!err && count === 0) {
+      new Role({
+        name: "user" 
+      }).save(err => {
+        if (err) {
+          console.log("error", err);
+        }
 
+        console.log("added 'user' to roles collection");
+      });
 
+      new Role({
+        name: "moderator"
+      }).save(err => {
+        if (err) {
+          console.log("error", err);
+        }
 
+        console.log("added 'moderator' to roles collection");
+      });
 
-//create an http server
-// const server = http.createServer((req, res) => {
-//     // Set the response headers
-//     res.writeHead(200, {'Content-Type': 'text/html'});
+      new Role({
+        name: "admin"
+      }).save(err => {
+        if (err) {
+          console.log("error", err);
+        }
 
-//     //Write the response content
-//     res.write('<h1>Hello, Node.js HTTP Server!!!</h1>');
-//     res.end();
-// });
-
-// // Specify the port to listen on
-// const port = 3000;
-
-// // Start the server;
-// server.listen(port, () => {
-//     console.log(`Node.js HTTP server is running on port ${port}`);
-// });
+        console.log("added 'admin' to roles collection");
+      });
+    }
+  });
+}
