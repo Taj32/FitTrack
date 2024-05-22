@@ -30,12 +30,11 @@ app.use(
 const db = require("./app/models");
 const Role = db.role;
 
-const mongoURI = 
+
 
 db.mongoose
     .connect(mongoURI, {
 
-  //.connect(`mongodb://Taj:Chahal1969@${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
