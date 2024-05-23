@@ -30,6 +30,7 @@ app.use(
 const db = require("./app/models");
 const Role = db.role;
 
+const mongoURI = "mongodb+srv://Taj:Taj321@cluster0.yzenija.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 
 db.mongoose
@@ -55,6 +56,7 @@ app.get("/", (req, res) => {
 // routes
 require("./app/routes/auth.routes")(app);
 require("./app/routes/user.routes")(app);
+require("./app/routes/exercise.routes")(app);
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;
