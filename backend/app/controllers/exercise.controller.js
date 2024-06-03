@@ -4,9 +4,12 @@ const Exercise = require("../models/exercise.model");
 exports.createExercise = async (req, res) => {
     try {
       const { name } = req.body;
+      console.log("-----" + req.body + "------");
+      console.log("-----" + req.user + "------");
       const exercise = new Exercise({
-        user: "664d62711f8141dbdd9abe2b", //req.user._id,
-        name,
+        
+        user: req.user._id,  //"664d62711f8141dbdd9abe2b", //req.user._id,
+        name, 
         logs: []
       });
       await exercise.save();
