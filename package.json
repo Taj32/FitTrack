@@ -3,8 +3,12 @@
     "bcryptjs": "^2.4.3",
     "cookie-session": "^2.1.0",
     "cors": "^2.8.5",
+    "expo": "^51.0.9",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.0"
+  },
+  "devDependencies": {
+    "metro": "^0.80.9"
   }
 }
