@@ -68,8 +68,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   content: {
+    backgroundColor: '#f0f0f0',
     flex: 1,
-    padding: 32,
+    padding: 16,
     gap: 16,
     overflow: 'hidden',
   },
