@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Platform, View, TouchableOpacity, Text} from 'react-native';
+import { Image, StyleSheet, Platform, View, TouchableOpacity, Text, ScrollView, useWindowDimensions, Dimensions } from 'react-native';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -13,6 +13,11 @@ import { useFont } from "@shopify/react-native-skia";
 import inter from '@/assets/fonts/SpaceMono-Regular.ttf'; //frontend/gym-app/assets/fonts/inter-medium.ttf
 import { red } from 'react-native-reanimated/lib/typescript/reanimated2/Colors';
 //  @/assets/fonts/inter-medium.ttf
+import Carousel from 'react-native-reanimated-carousel';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { StatusBar } from 'expo-status-bar';
+import CarouselItem from '@/components/CarouselItem';
+
 
 const DATA = Array.from({ length: 30 }, (_, i) => ({
     day: i,
@@ -25,6 +30,8 @@ const DATA = Array.from({ length: 30 }, (_, i) => ({
 export default function HomeScreen() {
     const font = useFont(inter, 8);
     const ref = useRef(null)
+    const width = Dimensions.get('window').width //window').width;
+
 
     const data = [{ value: 15, label: '6/9' },
     { value: 10, label: '6/10' },
@@ -62,6 +69,25 @@ export default function HomeScreen() {
             x: ind * 400 - 25
         }); // adjust as per your UI
     };
+
+    const items = [
+        {
+            id: 'item-1',
+            title: 'Item 1',
+            img: require('@/assets/images/running-man.png'),
+        },
+        {
+            id: 'item-2',
+            title: 'Item 2',
+            img: require('@/assets/images/heart.png'),
+        },
+        // Add more items as needed
+    ];
+
+    const scrollX = useSharedValue(0);
+    const onScrollHandler = useAnimatedScrollHandler((event) => {
+        scrollX.value = event.contentOffset.x;
+    });
 
     return (
 
@@ -124,7 +150,7 @@ export default function HomeScreen() {
                     showTextOnFocus
                     animateOnDataChange
                     color={'#C8A2C8'}
-                    
+
                 />
                 <View style={{ flexDirection: 'row', marginLeft: 30, marginTop: 5, }}>
                     {options.map((item, index) => {
@@ -182,7 +208,78 @@ export default function HomeScreen() {
 
 
 
-        </ParallaxScrollView>
+            <View style={{ flex: 1, height: 300 }}>
+                <StatusBar style="auto" />
+                <Animated.FlatList
+                    horizontal
+                    onScroll={onScrollHandler}
+                    data={items}
+                    keyExtractor={(item) => item.id}
+                    pagingEnabled={true}
+                    renderItem={({ item, index }) => {
+                        return <CarouselItem item={item} index={index} scrollX={scrollX} />;
+                    }}
+                />
+
+
+            </View>
+
+            {/* <ScrollView 
+            style={styles.scroll}
+            horizontal={true} 
+            decelerationRate={0}
+            snapToInterval={330} //your element width
+            snapToAlignment={"center"} 
+             >
+
+                
+
+            </ScrollView> */}
+
+            {/* <Carousel
+                ref={(c) => { this._carousel = c; }}
+                data={this.state.entries}
+                renderItem={this._renderItem}
+                sliderWidth={sliderWidth}
+                itemWidth={itemWidth}
+            /> */}
+
+
+
+            <View style={[styles.scrollChart, { marginRight: 30 }]}>
+                <ThemedText type="subtitle">Squat</ThemedText>
+                <LineChart
+                    data={data}
+                    curved
+                    isAnimated
+                    height={150}
+                    focusEnabled
+                    showTextOnFocus
+                    animateOnDataChange
+                    color={'#98FB98'}
+                />
+                <View style={{ flexDirection: 'row', marginLeft: 30, marginTop: 5, }}>
+                    {options.map((item, index) => {
+                        return (
+                            <TouchableOpacity
+                                key={index}
+                                style={{
+                                    padding: 6,
+                                    margin: 4,
+                                    backgroundColor: '#98FB98',
+                                    borderRadius: 8,
+                                }}
+                                onPress={() => showOrHidePointer(index)}>
+                                <Text>{options[index]}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            </View>
+
+
+
+        </ParallaxScrollView >
     );
 }
 
@@ -223,4 +320,16 @@ const styles = StyleSheet.create({
         lineHeight: 32,
         marginTop: -6,
     },
+    scrollChart: {
+        rowGap: 10,
+        borderRadius: 30,
+        padding: 16,
+        height: 300,
+        width: 300,
+        backgroundColor: 'white',
+        overflow: 'hidden',
+    },
+    scroll: {
+        marginLeft: 30,
+    }
 });
