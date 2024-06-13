@@ -44,19 +44,19 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'main',
-          //tabBarIcon: ({ color, focused }) => (
-            //<TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
-          //),
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'person' : 'person-outline'} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="exercises"
         options={{
           title: 'exercises',
-          //tabBarIcon: ({ color, focused }) => (
-            //<TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
-          //),
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'heart' : 'heart-outline'} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
