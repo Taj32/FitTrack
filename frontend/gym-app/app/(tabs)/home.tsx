@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { CartesianChart, CartesianChartRenderArg, Line } from "victory-native";
 import { LineChart } from "react-native-gifted-charts";
-import { ReactNode, useRef } from 'react';
+import React, { ReactNode, useRef, useState } from 'react';
 import { BicepEmoji } from '@/components/BicepEmoji';
 import { useFont } from "@shopify/react-native-skia";
 
@@ -17,6 +17,10 @@ import Carousel from 'react-native-reanimated-carousel';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import CarouselItem from '@/components/CarouselItem';
+
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+
 
 
 const DATA = Array.from({ length: 30 }, (_, i) => ({
@@ -32,6 +36,7 @@ export default function HomeScreen() {
     const ref = useRef(null)
     const width = Dimensions.get('window').width //window').width;
 
+    const [selected, setSelected] = useState('');
 
     const data = [{ value: 15, label: '6/9' },
     { value: 10, label: '6/10' },
@@ -73,13 +78,15 @@ export default function HomeScreen() {
     const items = [
         {
             id: 'item-1',
-            title: 'Item 1',
+            title: 'weight',
             img: require('@/assets/images/running-man.png'),
+            color: 'blue',
         },
         {
             id: 'item-2',
-            title: 'Item 2',
+            title: 'steps',
             img: require('@/assets/images/heart.png'),
+            color: 'red',
         },
         // Add more items as needed
     ];
@@ -105,6 +112,37 @@ export default function HomeScreen() {
                 <ThemedText type="title">Hello, Taj..</ThemedText>
                 <BicepEmoji />
             </ThemedView>
+
+
+            <Calendar
+                style={{
+                    //borderWidth: 1,
+                    borderColor: 'gray',
+                    height: 380,
+                    borderRadius: 30,
+                }}
+                onDayPress={day => {
+                    setSelected(day.dateString);
+                }}
+
+                markingType={'period'}
+                markedDates={{
+                    //'2024-06-10': { textColor: 'green' },
+                    '2024-06-11': { startingDay: true, color: '#33B3A6', dotColor: '#50cebb' },
+                    '2024-06-12': { selected: true, color: '#39C9BB', dotColor: '#50cebb' },
+                    '2024-06-13': { selected: true, color: '#39C9BB' },
+                    '2024-06-14': { disabled: true, color: '#33B3A6', endingDay: true }
+                }}
+            >
+
+            </Calendar>
+
+            <View
+                style={{
+                    borderBottomColor: 'black',
+                    borderBottomWidth: 1,
+                }}
+            />
 
 
             <View style={styles.chart}>
@@ -202,13 +240,13 @@ export default function HomeScreen() {
                 </View>
             </View>
 
-            <ThemedView style={styles.stepContainer}>
+            {/* <ThemedView style={styles.stepContainer}>
                 <ThemedText>texttext</ThemedText>
-            </ThemedView>
+            </ThemedView> */}
 
 
 
-            <View style={{ flex: 1, height: 300 }}>
+            <View >
                 <StatusBar style="auto" />
                 <Animated.FlatList
                     horizontal
@@ -219,63 +257,19 @@ export default function HomeScreen() {
                     renderItem={({ item, index }) => {
                         return <CarouselItem item={item} index={index} scrollX={scrollX} />;
                     }}
+                    //decelerationRate="fast"
+                    showsHorizontalScrollIndicator={false}
                 />
-
 
             </View>
 
-            {/* <ScrollView 
-            style={styles.scroll}
-            horizontal={true} 
-            decelerationRate={0}
-            snapToInterval={330} //your element width
-            snapToAlignment={"center"} 
-             >
-
-                
-
-            </ScrollView> */}
-
-            {/* <Carousel
-                ref={(c) => { this._carousel = c; }}
-                data={this.state.entries}
-                renderItem={this._renderItem}
-                sliderWidth={sliderWidth}
-                itemWidth={itemWidth}
-            /> */}
 
 
 
-            <View style={[styles.scrollChart, { marginRight: 30 }]}>
-                <ThemedText type="subtitle">Squat</ThemedText>
-                <LineChart
-                    data={data}
-                    curved
-                    isAnimated
-                    height={150}
-                    focusEnabled
-                    showTextOnFocus
-                    animateOnDataChange
-                    color={'#98FB98'}
-                />
-                <View style={{ flexDirection: 'row', marginLeft: 30, marginTop: 5, }}>
-                    {options.map((item, index) => {
-                        return (
-                            <TouchableOpacity
-                                key={index}
-                                style={{
-                                    padding: 6,
-                                    margin: 4,
-                                    backgroundColor: '#98FB98',
-                                    borderRadius: 8,
-                                }}
-                                onPress={() => showOrHidePointer(index)}>
-                                <Text>{options[index]}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </View>
+
+
+
+
 
 
 
@@ -293,6 +287,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f0f0f0',
         gap: 8,
         paddingTop: 10,
+        paddingBottom: 10,
         margin: 0,
     },
     stepContainer: {
@@ -331,5 +326,14 @@ const styles = StyleSheet.create({
     },
     scroll: {
         marginLeft: 30,
+    },
+    carousel: {
+        height: 300,
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    calendar: {
+        color: 'red',
     }
 });
