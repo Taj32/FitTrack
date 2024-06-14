@@ -1,52 +1,65 @@
 import React, { useState } from "react";
-import { SafeAreaView, View, Text, TextInput, FlatList, StyleSheet } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, FlatList, StyleSheet, Button, Alert, Dimensions, Image } from 'react-native';
+import { red } from "react-native-reanimated/lib/typescript/reanimated2/Colors";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+
+const { width } = Dimensions.get('window');
 
 const App = () => {
 
   const languages = [
     {
       id: 1,
-      title: 'Python',
+      title: 'Bench',
+      imageSource: require('@/assets/images/workouts/benchPress.jpg'),
     },
     {
       id: 2,
-      title: 'Java',
+      title: 'Squat',
+      imageSource: require('@/assets/images/workouts/squat.png'),
     },
     {
       id: 3,
-      title: 'C++',
+      title: 'Deadlift',
+      imageSource: require('@/assets/images/workouts/deadLift.png'),
     },
     {
       id: 4,
-      title: 'JavaScript',
+      title: 'Pull Up',
+      imageSource: require('@/assets/images/workouts/pullup.png'),
     },
     {
       id: 5,
-      title: 'Ruby',
+      title: 'Leg Press',
+      imageSource: require('@/assets/images/workouts/legPress.png'),
     },
     {
       id: 6,
-      title: 'Scala',
+      title: 'Shoulder Press',
+      imageSource: require('@/assets/images/workouts/shoulderPress.png'),
     },
     {
       id: 7,
-      title: 'Rust',
+      title: 'Ab Crunch',
+      //imageSource: require('@/assets/images/workouts/abCrunch.png'),
     },
     {
       id: 8,
-      title: 'Perl',
+      title: 'Leg Curl',
+      //imageSource: require('@/assets/images/workouts/legCurl.png'),
     },
     {
       id: 9,
-      title: 'Swift',
+      title: 'Leg Extension',
+      //imageSource: require('@/assets/images/workouts/legExtension.png'),
     },
     {
       id: 10,
-      title: 'TypeScript',
+      title: 'Bicep Curl',
+      //imageSource: require('@/assets/images/workouts/bicepCurl.png'),
     },
   ];
 
@@ -67,28 +80,50 @@ const App = () => {
 
   const renderItem = ({ item }) => (
     <View style={styles.box}>
-      <Text style={styles.title}> { item.title } </Text>
+      <Image
+        source={
+          item.imageSource
+            ? item.imageSource
+            : require('@/assets/images/running-man.png')
+        }
+        style={styles.exerciseImage}
+      />
+      <Text style={styles.title}> {item.title} </Text>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+
       <View style={styles.searchBarContainer}>
-        <Text style={styles.title}> Programming Languages </Text>
-        <TextInput 
+        <View style={styles.searchRow}>
+          {/* <View style={styles.buttonContainer}>
+            <Button
+              onPress={() => Alert.alert('Simple Button pressed')}
+              title="New"
+              accessibilityLabel="Learn more about this purple button"
+            />
+          </View> */}
+          <Text style={styles.title}>Exercises</Text>
+        </View>
+
+
+
+
+        <TextInput
           style={styles.searchBar}
           placeholderTextColor="black"
-          placeholder="Search available languages"
+          placeholder="Search available exercises"
           value={searchText}
           onChangeText={text => searchFunction(text)}
         />
       </View>
       <View style={styles.listDataContainer}>
         <FlatList
-          data={ data }
-          extraData={ data }
-          showsVerticalScrollIndicator={ false }
-          renderItem={ renderItem }
+          data={data}
+          extraData={data}
+          showsVerticalScrollIndicator={false}
+          renderItem={renderItem}
           keyExtractor={(item) => item.id}
         />
       </View>
@@ -129,14 +164,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   box: {
-    width: wp(90),
+    width: wp(90), // Replace 'wp' and 'hp' with the appropriate values or functions
     height: hp(20),
     borderWidth: wp(0.2),
     borderColor: 'black',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row', // Add this line to arrange children in a row
+    alignItems: 'center', // Centers children vertically
+    justifyContent: 'center', // Centers children horizontally
     margin: wp(1)
   },
+  searchRow: {
+    flexDirection: 'row',
+    gap: (width / 4),
+    alignItems: 'center',
+    //alignItems: 'baseline',
+    //alignContent: 'space-evenly',
+    //alignItems: 'flex-start',
+  },
+  newButton: {
+    color: 'red',
+  },
+  exerciseImage: {
+    height: 150,
+    width: 150,
+    resizeMode: 'contain',
+    bottom: 0,
+    left: 0,
+    //position: 'absolute',
+  }
 });
 
 export default App;
