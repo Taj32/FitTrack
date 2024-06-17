@@ -133,7 +133,7 @@ const App = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1, //'#f2f1f6',
   },
   searchBarContainer: {
     flex: 1.5,

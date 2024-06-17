@@ -1,102 +1,203 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform } from 'react-native';
+import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Modal, SafeAreaView, Text, View } from 'react-native';
 
 import { Collapsible } from '@/components/Collapsible';
 import { ExternalLink } from '@/components/ExternalLink';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { SetStateAction, useState } from 'react';
+import { ScreenContainer } from 'react-native-screens';
 
 export default function WorkoutScreen() {
+
+  interface ExerciseData {
+    sets: string;
+    reps: string;
+    weight: string;
+  }
+
+  interface Workout {
+    id: number;
+    name: string;
+    exercises: Exercise[];
+  }
+
+  interface Exercise {
+    id: number;
+    name: string;
+  }
+
+  const [workouts, setWorkouts] = useState([
+    {
+      id: 1, name: 'Full Body Workout', exercises: [
+        { id: 1, name: 'Bench Press' },
+        { id: 2, name: 'Squats' },
+        { id: 3, name: 'Deadlifts' },
+      ]
+    },
+    {
+      id: 2, name: 'Upper Body Workout', exercises: [
+        { id: 4, name: 'Overhead Press' },
+        { id: 5, name: 'Pull-ups' },
+        { id: 6, name: 'Bicep Curls' },
+      ]
+    },
+  ]);
+
+  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [exerciseData, setExerciseData] = useState<ExerciseData[]>([]);
+
+
+  const handleWorkoutSelect = (workout: any) => {
+    setSelectedWorkout(workout);
+    setShowModal(true);
+    setExerciseData(workout.exercises.map(() => ({ sets: '', reps: '', weight: '' })));
+  };
+
+  const handleSaveWorkout = () => {
+    // Save workout data with exerciseData
+    console.log('Saved workout:', selectedWorkout, exerciseData);
+    setShowModal(false);
+  };
+
+  const handleExerciseDataChange = (index: number, field: keyof ExerciseData, value: string) => {
+    const updatedExerciseData = [...exerciseData];
+    updatedExerciseData[index][field] = value;
+    setExerciseData(updatedExerciseData);
+  };
+
+  const renderWorkoutItem = ({ item }: { item: Workout }) => (
+    <TouchableOpacity onPress={() => handleWorkoutSelect(item)}>
+      <ThemedText>{item.name}</ThemedText>
+    </TouchableOpacity>
+  );
+
+  const renderExerciseItem = ({ item, index }: { item: Exercise; index: number }) => (
+    <ThemedView style={styles.exerciseContainer}>
+      <ThemedText>{item.name}</ThemedText>
+      <TextInput
+        placeholder="Sets"
+        value={exerciseData[index].sets}
+        onChangeText={(text) => handleExerciseDataChange(index, 'sets', text)}
+      />
+      <TextInput
+        placeholder="Reps"
+        value={exerciseData[index].reps}
+        onChangeText={(text) => handleExerciseDataChange(index, 'reps', text)}
+      />
+      <TextInput
+        placeholder="Weight"
+        value={exerciseData[index].weight}
+        onChangeText={(text) => handleExerciseDataChange(index, 'weight', text)}
+      />
+    </ThemedView>
+  );
+
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={<Ionicons size={310} name="code-slash" style={styles.headerImage} />}>
+
+    <SafeAreaView style={styles.container}>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Exercise</ThemedText>
+        <ThemedText type="title" >Start Workout</ThemedText>
+        <Ionicons name="fitness" size={50} color="black" />
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText> library
-          to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+      <FlatList
+        data={workouts}
+        renderItem={renderWorkoutItem}
+        keyExtractor={(item) => item.id.toString()}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListHeaderComponent={() => <View style={styles.separator} />}
+      />
+      <Modal visible={showModal} animationType="slide">
+        <ThemedView style={styles.modalContainer}>
+          <ThemedText type="title">{selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}</ThemedText>
+          <FlatList
+            data={selectedWorkout ? selectedWorkout.exercises : []}
+            renderItem={renderExerciseItem}
+            keyExtractor={(item) => item.id.toString()}
+            ListFooterComponent={
+              <TouchableOpacity style={styles.saveButton} onPress={handleSaveWorkout}>
+                <ThemedText>Save Workout</ThemedText>
+              </TouchableOpacity>
+            }
+          />
+        </ThemedView>
+      </Modal>
+
+      <Text>Hello</Text>
+      <Text>Hello</Text>
+
+      <Text>Hello</Text>
+      <Text>Hello</Text>
+
+
+      <Text>Hello</Text>
+      <Text>Hello</Text>
+      <Text>Hello</Text>
+      <Text>Hello</Text>
+
+
+      {/* <ParallaxScrollView
+        headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+        headerImage={
+          <Image
+            source={require('@/assets/images/running-man.png')}
+            style={styles.headerImage}
+          />
+        }
+      >
+        
+      </ParallaxScrollView> */}
+    </SafeAreaView>
+
+
   );
 }
 
+
+
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  // titleText: {
+  //   backgroundColor: 'red',
+  // },
+  container: {
+    backgroundColor:  '#f2f1f6',
   },
   titleContainer: {
+    paddingTop: 50,
+    paddingBottom: 10,
+
+    paddingLeft: 15,
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
+    backgroundColor: 'f2f1f6',
+  },
+  screenContainer: {
+    flex: 1,
+  },
+  exerciseContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    padding: 16,
+    //backgroundColor: 'red',
+  },
+  saveButton: {
+    backgroundColor: 'green',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  separator: {
+    height: 1,
+    width: '50%',
+    backgroundColor: '#ccc', // light gray color
   },
 });

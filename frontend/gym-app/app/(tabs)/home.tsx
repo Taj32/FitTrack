@@ -279,12 +279,12 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
     parallax: {
-        backgroundColor: '#f0f0f0',
+        backgroundColor: '#f2f1f6',
     },
     titleContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f0f0f0',
+        backgroundColor: '#f2f1f6',
         gap: 8,
         paddingTop: 10,
         paddingBottom: 10,
