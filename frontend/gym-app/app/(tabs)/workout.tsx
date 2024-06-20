@@ -1,22 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Modal, SafeAreaView, Text, View } from 'react-native';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import React, { SetStateAction, useState } from 'react';
-import { ScreenContainer } from 'react-native-screens';
-import { IconFill, IconOutline } from '@ant-design/icons-react-native';
-import { StepForwardOutlined } from '@ant-design/icons';
+import * as FileSystem from 'expo-file-system';
+
+
 
 export default function WorkoutScreen() {
 
   interface ExerciseData {
-    sets: string;
-    reps: string;
-    weight: string;
+    logs: { reps: string; weight: string }[];
   }
 
   interface Workout {
@@ -34,8 +29,8 @@ export default function WorkoutScreen() {
   const [workouts, setWorkouts] = useState([
     {
       id: 1, name: 'Full Body Workout', exercises: [
-        { id: 1, name: 'Bench Press', set: 3 },
-        { id: 2, name: 'Squats', set: 2 },
+        { id: 1, name: 'Bench Press', set: 1 },
+        { id: 2, name: 'Squats', set: 1 },
         { id: 3, name: 'Deadlifts', set: 1 },
       ]
     },
@@ -81,23 +76,66 @@ export default function WorkoutScreen() {
   const [exerciseData, setExerciseData] = useState<ExerciseData[]>([]);
 
 
-  const handleWorkoutSelect = (workout: any) => {
+  const handleWorkoutSelect = (workout: Workout) => {
     setSelectedWorkout(workout);
     setShowModal(true);
-    setExerciseData(workout.exercises.map(() => ({ sets: '', reps: '', weight: '' })));
+    setExerciseData(workout.exercises.map(exercise => ({
+      logs: Array(exercise.set).fill({ reps: '', weight: '' })
+    })));
   };
 
-  const handleSaveWorkout = () => {
-    // Save workout data with exerciseData
-    console.log('Saved workout:', selectedWorkout);
-    console.log(exerciseData);
+  const handleSaveWorkout = async () => {
+    if (!selectedWorkout) {
+      console.log('No workout selected');
+      return;
+    }
+    
+    let fileContent = `Saved workout: ${selectedWorkout.name}\n\n`;
+    console.log('Saved workout:', selectedWorkout.name);
+    
+    selectedWorkout.exercises.forEach((exercise, index) => {
+      console.log(`\nExercise: ${exercise.name}`);
+      console.log('Set\tReps\t\tWeight');
+      exerciseData[index].logs.forEach((log, setIndex) => {
+        console.log(`${setIndex + 1}\t\t${log.reps}\t\t${log.weight}`);
+      });
+    });
+
+    selectedWorkout.exercises.forEach((exercise, index) => {
+      fileContent += `Exercise: ${exercise.name}\n`;
+      fileContent += 'Set\tReps\tWeight\n';
+      exerciseData[index].logs.forEach((log, setIndex) => {
+        fileContent += `${setIndex + 1}\t${log.reps}\t${log.weight}\n`;
+      });
+      fileContent += '\n';
+    });
+  
+    const fileName = `workout_${selectedWorkout.id}_${Date.now()}.txt`;
+    const filePath = `${FileSystem.documentDirectory}${fileName}`;
+  
+    try {
+      await FileSystem.writeAsStringAsync(filePath, fileContent);
+      console.log(`Workout saved to ${filePath}`);
+      
+      // Optional: Read the file back to verify
+      const savedContent = await FileSystem.readAsStringAsync(filePath);
+      console.log('Saved workout data:', savedContent);
+    } catch (error) {
+      console.error('Error saving workout:', error);
+    }
+  
     setShowModal(false);
   };
 
-  const handleExerciseDataChange = (index: number, field: keyof ExerciseData, value: string) => {
-    const updatedExerciseData = [...exerciseData];
-    updatedExerciseData[index][field] = value;
-    setExerciseData(updatedExerciseData);
+  const handleExerciseDataChange = (exerciseIndex: number, setIndex: number, field: 'reps' | 'weight', value: string) => {
+    setExerciseData(prevData => {
+      const newData = [...prevData];
+      newData[exerciseIndex].logs[setIndex] = {
+        ...newData[exerciseIndex].logs[setIndex],
+        [field]: value
+      };
+      return newData;
+    });
   };
 
   const renderWorkoutItem = ({ item }: { item: Workout }) => (
@@ -139,14 +177,14 @@ export default function WorkoutScreen() {
           <TextInput
             placeholder="Reps"
             style={styles.cell}
-            value={exerciseData[index].reps}
-            onChangeText={(text) => handleExerciseDataChange(index, 'reps', text)}
+            value={exerciseData[index].logs[setIndex].reps}
+            onChangeText={(text) => handleExerciseDataChange(index, setIndex, 'reps', text)}
           />
           <TextInput
             placeholder="Weight"
             style={styles.cell}
-            value={exerciseData[index].weight}
-            onChangeText={(text) => handleExerciseDataChange(index, 'weight', text)}
+            value={exerciseData[index].logs[setIndex].weight}
+            onChangeText={(text) => handleExerciseDataChange(index, setIndex, 'weight', text)}
           />
         </View>
       ))}
