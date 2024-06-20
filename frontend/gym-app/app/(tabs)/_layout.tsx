@@ -68,6 +68,15 @@ export default function TabLayout() {
           //),
         }}
       />
+      <Tabs.Screen
+        name="workout"
+        options={{
+          title: 'workout',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'add' : 'add-outline'} color={color} />
+          ),
+        }}
+      />
       
     </Tabs>
   );

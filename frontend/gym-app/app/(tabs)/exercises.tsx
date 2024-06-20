@@ -107,9 +107,6 @@ const App = () => {
           <Text style={styles.title}>Exercises</Text>
         </View>
 
-
-
-
         <TextInput
           style={styles.searchBar}
           placeholderTextColor="black"
@@ -118,6 +115,7 @@ const App = () => {
           onChangeText={text => searchFunction(text)}
         />
       </View>
+
       <View style={styles.listDataContainer}>
         <FlatList
           data={data}
@@ -127,17 +125,20 @@ const App = () => {
           keyExtractor={(item) => item.id}
         />
       </View>
+
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, //'#f2f1f6',
+    flex: 1, 
+    backgroundColor: 'white', //'#f2f1f6',
   },
   searchBarContainer: {
     flex: 1.5,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'white',
+    //backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     flex: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'white',
   },
   box: {
     width: wp(90), // Replace 'wp' and 'hp' with the appropriate values or functions

@@ -6,8 +6,10 @@ import { ExternalLink } from '@/components/ExternalLink';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { SetStateAction, useState } from 'react';
+import React, { SetStateAction, useState } from 'react';
 import { ScreenContainer } from 'react-native-screens';
+import { IconFill, IconOutline } from '@ant-design/icons-react-native';
+import { StepForwardOutlined } from '@ant-design/icons';
 
 export default function WorkoutScreen() {
 
@@ -26,21 +28,50 @@ export default function WorkoutScreen() {
   interface Exercise {
     id: number;
     name: string;
+    set: number;
   }
 
   const [workouts, setWorkouts] = useState([
     {
       id: 1, name: 'Full Body Workout', exercises: [
-        { id: 1, name: 'Bench Press' },
-        { id: 2, name: 'Squats' },
-        { id: 3, name: 'Deadlifts' },
+        { id: 1, name: 'Bench Press', set: 3 },
+        { id: 2, name: 'Squats', set: 2 },
+        { id: 3, name: 'Deadlifts', set: 1 },
       ]
     },
     {
       id: 2, name: 'Upper Body Workout', exercises: [
-        { id: 4, name: 'Overhead Press' },
-        { id: 5, name: 'Pull-ups' },
-        { id: 6, name: 'Bicep Curls' },
+        { id: 4, name: 'Overhead Press', set: 3 },
+        { id: 5, name: 'Pull-ups', set: 3 },
+        { id: 6, name: 'Bicep Curls', set: 3 },
+      ]
+    },
+    {
+      id: 3, name: 'Lower Body Workout', exercises: [
+        { id: 7, name: 'Squats', set: 4 },
+        { id: 8, name: 'Lunges', set: 3 },
+        { id: 9, name: 'Leg Press', set: 3 },
+      ]
+    },
+    {
+      id: 4, name: 'Ab Workout', exercises: [
+        { id: 10, name: 'Crunches', set: 3 },
+        { id: 11, name: 'Planks', set: 3 },
+        { id: 12, name: 'Russian Twists', set: 3 },
+      ]
+    },
+    {
+      id: 5, name: 'Leg Workout', exercises: [
+        { id: 13, name: 'Squats', set: 4 },
+        { id: 14, name: 'Deadlifts', set: 3 },
+        { id: 15, name: 'Calf Raises', set: 3 },
+      ]
+    },
+    {
+      id: 6, name: 'HIIT Workout', exercises: [
+        { id: 16, name: 'Burpees', set: 4 },
+        { id: 17, name: 'Mountain Climbers', set: 4 },
+        { id: 18, name: 'Jump Squats', set: 4 },
       ]
     },
   ]);
@@ -58,7 +89,8 @@ export default function WorkoutScreen() {
 
   const handleSaveWorkout = () => {
     // Save workout data with exerciseData
-    console.log('Saved workout:', selectedWorkout, exerciseData);
+    console.log('Saved workout:', selectedWorkout);
+    console.log(exerciseData);
     setShowModal(false);
   };
 
@@ -70,28 +102,55 @@ export default function WorkoutScreen() {
 
   const renderWorkoutItem = ({ item }: { item: Workout }) => (
     <TouchableOpacity onPress={() => handleWorkoutSelect(item)}>
-      <ThemedText>{item.name}</ThemedText>
+      <View style={styles.workoutContainer}>
+        <Text style={styles.workoutOptions} >{item.name}</Text>
+        <Ionicons name="caret-forward" size={16} color="gray" />
+      </View>
+
+      {/* <RightOutlined /> */}
     </TouchableOpacity>
   );
 
   const renderExerciseItem = ({ item, index }: { item: Exercise; index: number }) => (
+
     <ThemedView style={styles.exerciseContainer}>
       <ThemedText>{item.name}</ThemedText>
-      <TextInput
-        placeholder="Sets"
-        value={exerciseData[index].sets}
-        onChangeText={(text) => handleExerciseDataChange(index, 'sets', text)}
-      />
-      <TextInput
-        placeholder="Reps"
-        value={exerciseData[index].reps}
-        onChangeText={(text) => handleExerciseDataChange(index, 'reps', text)}
-      />
-      <TextInput
-        placeholder="Weight"
-        value={exerciseData[index].weight}
-        onChangeText={(text) => handleExerciseDataChange(index, 'weight', text)}
-      />
+      <View style={styles.row}>
+        <Text style={styles.cell}>Set</Text>
+        <Text style={styles.cell}>Lbs</Text>
+        <Text style={styles.cell}>Reps</Text>
+      </View>
+
+      {Array.from({ length: item.set }).map((_, setIndex) => (
+        <View key={setIndex} style={styles.row}>
+          <Text style={styles.cell}>{setIndex + 1}</Text>
+          {/* <TextInput
+          placeholder="Lbs"
+          value={exerciseData[index].lbs[setIndex]}
+          style={styles.cell}
+          onChangeText={(text) => handleExerciseDataChange(index, 'lbs', text)}
+        />
+        <TextInput
+          placeholder="Reps"
+          value={exerciseData[index].reps[setIndex]}
+          style={styles.cell}
+          onChangeText={(text) => handleExerciseDataChange(index, 'reps', text, setIndex)}
+        /> */}
+          <TextInput
+            placeholder="Reps"
+            style={styles.cell}
+            value={exerciseData[index].reps}
+            onChangeText={(text) => handleExerciseDataChange(index, 'reps', text)}
+          />
+          <TextInput
+            placeholder="Weight"
+            style={styles.cell}
+            value={exerciseData[index].weight}
+            onChangeText={(text) => handleExerciseDataChange(index, 'weight', text)}
+          />
+        </View>
+      ))}
+
     </ThemedView>
   );
 
@@ -99,23 +158,43 @@ export default function WorkoutScreen() {
   return (
 
     <SafeAreaView style={styles.container}>
+      <ThemedView style={styles.buttonContainer}>
+        <ThemedText style={styles.editButton} onPress={() => alert('Edit pressed')}>
+          Edit
+        </ThemedText>
+        <Ionicons
+          name="add-circle-outline"
+          size={24}
+          color='#007AFF'
+          style={{ marginRight: 16 }}
+          onPress={() => alert('"+" pressed')}
+        />
+      </ThemedView>
+
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title" >Start Workout</ThemedText>
         <Ionicons name="fitness" size={50} color="black" />
       </ThemedView>
+
       <FlatList
         data={workouts}
         renderItem={renderWorkoutItem}
         keyExtractor={(item) => item.id.toString()}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={() => <View style={styles.separator} />}
+        ListFooterComponent={() => <View style={styles.separator} />}
       />
-      <Modal visible={showModal} animationType="slide">
+
+      <Modal visible={showModal} animationType="slide" >
         <ThemedView style={styles.modalContainer}>
           <ThemedText type="title">{selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}</ThemedText>
           <FlatList
             data={selectedWorkout ? selectedWorkout.exercises : []}
             renderItem={renderExerciseItem}
+            ListHeaderComponent={
+              <View style={styles.workoutHeader}>
+              </View>
+            }
             keyExtractor={(item) => item.id.toString()}
             ListFooterComponent={
               <TouchableOpacity style={styles.saveButton} onPress={handleSaveWorkout}>
@@ -126,30 +205,6 @@ export default function WorkoutScreen() {
         </ThemedView>
       </Modal>
 
-      <Text>Hello</Text>
-      <Text>Hello</Text>
-
-      <Text>Hello</Text>
-      <Text>Hello</Text>
-
-
-      <Text>Hello</Text>
-      <Text>Hello</Text>
-      <Text>Hello</Text>
-      <Text>Hello</Text>
-
-
-      {/* <ParallaxScrollView
-        headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-        headerImage={
-          <Image
-            source={require('@/assets/images/running-man.png')}
-            style={styles.headerImage}
-          />
-        }
-      >
-        
-      </ParallaxScrollView> */}
     </SafeAreaView>
 
 
@@ -163,41 +218,85 @@ const styles = StyleSheet.create({
   //   backgroundColor: 'red',
   // },
   container: {
-    backgroundColor:  '#f2f1f6',
+    backgroundColor: '#f2f1f6',
+    flex: 1,
+    flexGrow: 1,
   },
   titleContainer: {
-    paddingTop: 50,
+    paddingTop: 10,
     paddingBottom: 10,
 
     paddingLeft: 15,
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
-    backgroundColor: 'f2f1f6',
+    backgroundColor: '#f2f1f6',
   },
   screenContainer: {
     flex: 1,
   },
   exerciseContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginVertical: 10,
+    //flexDirection: 'row',
+    //alignItems: 'center',
+    //gap: 0,
   },
   modalContainer: {
-    flex: 1,
+    //flex: 1,
+    marginTop: 128,
     padding: 16,
+    marginHorizontal: 24,
+    backgroundColor: '#f2f1f6',
+    borderRadius: 30,
     //backgroundColor: 'red',
   },
   saveButton: {
-    backgroundColor: 'green',
+    //backgroundColor: 'green',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
+    backgroundColor: '#A1CEDC',
   },
   separator: {
     height: 1,
-    width: '50%',
+    width: '100%',
     backgroundColor: '#ccc', // light gray color
   },
+  workoutOptions: {
+    color: 'black',
+    fontSize: 15,
+    flex: 1,
+  },
+  workoutContainer: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+  },
+  buttonContainer: {
+    flexDirection: 'row', alignItems: 'center',
+    marginTop: 16,
+    marginLeft: 16,
+
+    backgroundColor: '#f2f1f6',
+  },
+  editButton: {
+    flex: 1,
+    fontSize: 17,
+    color: '#007AFF',
+  },
+  workoutHeader: {
+    marginTop: 10,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  cell: {
+    flex: 1,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+
 });
