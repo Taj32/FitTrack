@@ -14,30 +14,12 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
       }}>
-      {/* <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} />
-          ),
-        }}
-      /> */}
-      {/* <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Exploreee',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
-          ),
-        }}
-      /> */}
       <Tabs.Screen
         name="login"
         options={{
           title: 'log on',
           //tabBarIcon: ({ color, focused }) => (
-            //<TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
+          //<TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
           //),
         }}
       />
@@ -63,21 +45,30 @@ export default function TabLayout() {
         name="journal"
         options={{
           title: 'journal',
-          //tabBarIcon: ({ color, focused }) => (
-            //<TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
-          //),
+          tabBarIcon: ({ color, focused }) => (
+          <TabBarIcon name={focused ? 'journal' : 'journal-outline'} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="workout"
+        name="workout" //File name
         options={{
-          title: 'workout',
+          title: 'workouts',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'add' : 'add-outline'} color={color} />
           ),
         }}
       />
-      
+      <Tabs.Screen
+        name="friends" //File name
+        options={{
+          title: 'social',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'people' : 'people-outline'} color={color} />
+          ),
+        }}
+      />
+
     </Tabs>
   );
 }
