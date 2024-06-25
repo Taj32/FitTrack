@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-session": "^2.1.0",
@@ -6,7 +7,10 @@
     "expo": "^51.0.9",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.4.0"
+    "mongoose": "^8.4.0",
+    "mysql2": "^3.10.1",
+    "nodemon": "^3.1.4",
+    "sequelize": "^6.37.3"
   },
   "devDependencies": {
     "metro": "^0.80.9"
