@@ -1,8 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Image, Platform, StatusBar, ImageBackground, TouchableOpacity } from 'react-native';
 
-import { Alert, Button, Pressable, SafeAreaView, Switch, Text, TextInput, View } from 'react-native'
+import { Text, TextInput, View } from 'react-native'
 import { useState } from 'react';
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 
 const logo = require("@/assets/images/adaptive-icon.png")
@@ -11,7 +14,7 @@ const apple = require("@/assets/images/apple-logo.png")
 const instagram = require("@/assets/images/instagram.png")
 
 //const API_URL = 'http://localhost:5000'; //Platform.OS === 'ios' ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
-const API_URL = 'http://192.168.1.204:5000';
+const API_URL = 'http://192.168.1.102:5000';
 
 
 
@@ -19,80 +22,99 @@ const API_URL = 'http://192.168.1.204:5000';
 export default function LoginForm() {
 
   const [email, setEmail] = useState('');
-    const [name, setName] = useState('');
-    const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
 
-    const [isError, setIsError] = useState(false);
-    const [message, setMessage] = useState('');
-    const [isLogin, setIsLogin] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
 
-    const onChangeHandler = () => {
-        setIsLogin(!isLogin);
-        setMessage('');
-    };
+  const onChangeHandler = () => {
+    setIsLogin(!isLogin);
+    setMessage('');
+  };
 
-    const onLoggedIn = token => {
-        fetch(`${API_URL}/private`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`, 
-            },
-        })
-        .then(async res => { 
-            try {
-                const jsonRes = await res.json();
-                if (res.status === 200) {
-                    setMessage(jsonRes.message);
-                }
-            } catch (err) {
-                console.log(err);
-            };
-        })
-        .catch(err => {
-            console.log(err);
-        });
+  const onLoggedIn = async (token: any) => {
+    try {
+      await AsyncStorage.setItem('userToken', token);
+      console.log('Token stored successfully');
+
+      // After storing the token, navigate to the home screen
+      router.replace('/(tabs)/home');
+    } catch (error) {
+      console.error('Error storing token:', error);
     }
 
-    const onSubmitHandler = () => {
-        const payload = {
-            email,
-            name,
-            password,
+    fetch(`${API_URL}/private`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+      .then(async res => {
+        try {
+          const jsonRes = await res.json();
+          if (res.status === 200) {
+            setMessage(jsonRes.message);
+          }
+        } catch (err) {
+          console.log(err);
         };
-        console.log("API URL:", `${API_URL}/${isLogin ? 'login' : 'signup'}`);
-        console.log("Payload:", payload);
-        fetch(`${API_URL}/${isLogin ? 'login' : 'signup'}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        })
-        .then(async res => { 
-            try {
-                const jsonRes = await res.json();
-                if (res.status !== 200) {
-                    setIsError(true);
-                    setMessage(jsonRes.message);
-                } else {
-                    onLoggedIn(jsonRes.token);
-                    setIsError(false);
-                    setMessage(jsonRes.message);
-                }
-            } catch (err) {
-                console.log(err);
-            };
-        })
-        .catch(err => {
-          console.log("Network request failed", err);
-        });
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  }
+
+  const onSubmitHandler = () => {
+    const payload = {
+        email,
+        name,
+        password,
     };
+    console.log("API URL:", `${API_URL}/${isLogin ? 'login' : 'signup'}`);
+    console.log("Payload:", payload);
+    fetch(`${API_URL}/${isLogin ? 'login' : 'signup'}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    })
+    .then(async res => { 
+        try {
+            const jsonRes = await res.json();
+            if (res.status !== 200) {
+                setIsError(true);
+                setMessage(jsonRes.message);
+            } else {
+                setIsError(false);
+                setMessage(jsonRes.message);
+                onLoggedIn(jsonRes.token);  // Call onLoggedIn with the token
+            }
+        } catch (err) {
+            console.log(err);
+        };
+    })
+    .catch(err => {
+      console.log("Network request failed", err);
+    });
+};
+
+  // const handleLogin = () => {
+  //   // Perform login logic here
+  //   // For example, validate user credentials
+
+  //   // After successful login, navigate to the profile screen
+  //   router.replace('/(tabs)/home');
+  // };
 
   const getMessage = () => {
     const status = isError ? `Error: ` : `Success: `;
     return status + message;
-  }
+}
+
 
   return (
     <View style={styles.container}>

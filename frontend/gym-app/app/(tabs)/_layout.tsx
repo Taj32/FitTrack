@@ -14,7 +14,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
       }}>
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="login"
         options={{
           title: 'log on',
@@ -22,9 +22,9 @@ export default function TabLayout() {
           //<TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
           //),
         }}
-      />
+      /> */}
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (

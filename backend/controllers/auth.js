@@ -43,6 +43,7 @@ const signup = (req, res, next) => {
     });
 };
 
+
 const login = (req, res, next) => {
     // checks if email exists
     User.findOne({ where : {
@@ -78,6 +79,7 @@ const login = (req, res, next) => {
 
 const isAuth = (req, res, next) => {
     const authHeader = req.get("Authorization");
+    console.log("Auth header:", req.get("Authorization"));
     if (!authHeader) {
         return res.status(401).json({ message: 'not authenticated' });
     };
@@ -91,8 +93,26 @@ const isAuth = (req, res, next) => {
     if (!decodedToken) {
         res.status(401).json({ message: 'unauthorized' });
     } else {
-        res.status(200).json({ message: 'here is your resource' });
+        //res.status(200).json({ message: 'here is your resource' });
+        req.email = decodedToken.email; // Store email in request for later use
+        next(); // Call next() to pass control to the next middleware
     };
 };
 
-export { signup, login, isAuth };
+const getName = (req, res, next) => {
+    User.findOne({ where: { email: req.email } })
+        .then(dbUser => {
+            if (!dbUser) {
+                return res.status(404).json({ message: "user not found" });
+            }
+            res.status(200).json({ name: dbUser.name });
+        })
+        .catch(err => {
+            console.log('error', err);
+            res.status(500).json({ message: "error retrieving user name" });
+        });
+};
+
+
+// At the end of auth.js
+export { signup, login, isAuth, getName };

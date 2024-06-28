@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { CartesianChart, CartesianChartRenderArg, Line } from "victory-native";
 import { LineChart } from "react-native-gifted-charts";
-import React, { ReactNode, useRef, useState } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { BicepEmoji } from '@/components/BicepEmoji';
 import { useFont } from "@shopify/react-native-skia";
 
@@ -19,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import CarouselItem from '@/components/CarouselItem';
 
 import { Calendar, LocaleConfig } from 'react-native-calendars';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
@@ -37,6 +38,35 @@ export default function HomeScreen() {
     const width = Dimensions.get('window').width //window').width;
 
     const [selected, setSelected] = useState('');
+
+    const [userName, setUserName] = useState('');
+
+    useEffect(() => {
+        fetchUserName();
+    }, []);
+
+    const fetchUserName = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            if (token) {
+                const response = await fetch('http://192.168.1.102:5000/getName', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setUserName(data.name);
+                } else {
+                    console.error('Failed to fetch user name');
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user name:', error);
+        }
+    };
 
     const data = [{ value: 15, label: '6/9' },
     { value: 10, label: '6/10' },
@@ -63,13 +93,11 @@ export default function HomeScreen() {
     { value: 100, label: '6/29' },
     { value: 100, label: '6/30' },
 
-
-
     ];
 
     const options = ["Week", "Month", "6 Months", "Year"]
 
-    const showOrHidePointer = (ind) => {
+    const showOrHidePointer = (ind: number) => {
         ref.current?.scrollTo({
             x: ind * 400 - 25
         }); // adjust as per your UI
@@ -109,7 +137,7 @@ export default function HomeScreen() {
             }
         >
             <ThemedView style={styles.titleContainer}>
-                <ThemedText type="title">Hello, Taj..</ThemedText>
+                    <ThemedText type="title">Hello, {userName || 'User'}...</ThemedText>
                 <BicepEmoji />
             </ThemedView>
 
