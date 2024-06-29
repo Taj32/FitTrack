@@ -1,13 +1,11 @@
 import express from 'express';
-
 import sequelize from './utils/database.js';
-
-import router from './routes/routes.js';
+import authRouter from './routes/routes.js';  // Rename this import to be more specific
+import exerciseRouter from './routes/exerciseRoutes.js';  // Add this new import
 
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
-
 app.use(express.json());
 
 app.use((_, res, next) => {
@@ -17,12 +15,25 @@ app.use((_, res, next) => {
     next();
 });
 
-app.use(router);
+// Use separate routers for auth and exercises
+app.use('/auth', authRouter);  // Assuming your current routes are auth-related
+app.use('/exercises', exerciseRouter);  // New exercise routes
 
-sequelize.sync(); 
+// Error handling middleware
+app.use((error, req, res, next) => {
+    console.log(error);
+    const status = error.statusCode || 500;
+    const message = error.message;
+    res.status(status).json({ message: message });
+});
 
-//app.listen(5000);
-
-app.listen(5000, () => {
-    console.log(`Server is running on port 5000`);
-  });
+sequelize.sync()
+    .then(() => {
+        console.log('Database synced successfully');
+        app.listen(5000, () => {
+            console.log(`Server is running on port 5000`);
+        });
+    })
+    .catch(err => {
+        console.error('Unable to sync database:', err);
+    });

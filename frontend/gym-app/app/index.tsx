@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Image, Platform, StatusBar, ImageBackground, TouchableOpacity } from 'react-native';
 
 import { Text, TextInput, View } from 'react-native'
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -14,7 +14,7 @@ const apple = require("@/assets/images/apple-logo.png")
 const instagram = require("@/assets/images/instagram.png")
 
 //const API_URL = 'http://localhost:5000'; //Platform.OS === 'ios' ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
-const API_URL = 'http://192.168.1.102:5000';
+const API_URL = 'http://192.168.1.205:5000';
 
 
 
@@ -34,86 +34,92 @@ export default function LoginForm() {
     setMessage('');
   };
 
-  const onLoggedIn = async (token: any) => {
+  const fetchName = async (token: any) => {
+    try {
+      console.log('Fetching name with token:', token);
+      const response = await fetch(`${API_URL}/auth/getName`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      console.log('Name fetch response status:', response.status);
+      const responseText = await response.text();
+      console.log('Name fetch response text:', responseText);
+
+      if (response.ok) {
+        const data = JSON.parse(responseText);
+        console.log('Parsed name data:', data);
+        return data.name;
+      } else {
+        console.error('Failed to fetch user name');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching user name:', error);
+      return null;
+    }
+  };
+
+  const onLoggedIn = async (token) => {
     try {
       await AsyncStorage.setItem('userToken', token);
       console.log('Token stored successfully');
 
-      // After storing the token, navigate to the home screen
+      const userName = await fetchName(token);
+      if (userName) {
+        await AsyncStorage.setItem('userName', userName);
+        console.log('Name stored successfully:', userName);
+      }
+
+      console.log('About to navigate to home');
       router.replace('/(tabs)/home');
     } catch (error) {
-      console.error('Error storing token:', error);
+      console.error('Error in onLoggedIn:', error);
     }
-
-    fetch(`${API_URL}/private`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    })
-      .then(async res => {
-        try {
-          const jsonRes = await res.json();
-          if (res.status === 200) {
-            setMessage(jsonRes.message);
-          }
-        } catch (err) {
-          console.log(err);
-        };
-      })
-      .catch(err => {
-        console.log(err);
-      });
-  }
+  };
 
   const onSubmitHandler = () => {
     const payload = {
-        email,
-        name,
-        password,
+      email,
+      name,
+      password,
     };
-    console.log("API URL:", `${API_URL}/${isLogin ? 'login' : 'signup'}`);
-    console.log("Payload:", payload);
-    fetch(`${API_URL}/${isLogin ? 'login' : 'signup'}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+    fetch(`${API_URL}/${isLogin ? 'auth/login' : 'auth/signup'}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     })
-    .then(async res => { 
+      .then(async res => {
+        const textResponse = await res.text(); // Get the raw text response
+        console.log('Raw response:', textResponse); // Log the raw response
         try {
-            const jsonRes = await res.json();
-            if (res.status !== 200) {
-                setIsError(true);
-                setMessage(jsonRes.message);
-            } else {
-                setIsError(false);
-                setMessage(jsonRes.message);
-                onLoggedIn(jsonRes.token);  // Call onLoggedIn with the token
-            }
+          const jsonRes = JSON.parse(textResponse); // Try to parse it as JSON
+          if (res.status !== 200) {
+            setIsError(true);
+            setMessage(jsonRes.message);
+          } else {
+            setIsError(false);
+            setMessage(jsonRes.message);
+            onLoggedIn(jsonRes.token);
+          }
         } catch (err) {
-            console.log(err);
+          console.log('Error parsing JSON:', err);
+          console.log('Response that caused the error:', textResponse);
         };
-    })
-    .catch(err => {
-      console.log("Network request failed", err);
-    });
-};
-
-  // const handleLogin = () => {
-  //   // Perform login logic here
-  //   // For example, validate user credentials
-
-  //   // After successful login, navigate to the profile screen
-  //   router.replace('/(tabs)/home');
-  // };
+      })
+      .catch(err => {
+        console.log("Network request failed", err);
+      });
+  };
 
   const getMessage = () => {
     const status = isError ? `Error: ` : `Success: `;
     return status + message;
-}
+  }
 
 
   return (

@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Platform, View, TouchableOpacity, Text, ScrollView, useWindowDimensions, Dimensions } from 'react-native';
+import { Image, StyleSheet, Platform, View, TouchableOpacity, Text, ScrollView, useWindowDimensions, Dimensions, ActivityIndicator } from 'react-native';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -29,7 +29,7 @@ const DATA = Array.from({ length: 30 }, (_, i) => ({
     highTmp: 40 + 30 * Math.random(),
 }));
 
-
+const API_URL = 'http://192.168.1.205:5000';
 
 
 export default function HomeScreen() {
@@ -38,33 +38,49 @@ export default function HomeScreen() {
     const width = Dimensions.get('window').width //window').width;
 
     const [selected, setSelected] = useState('');
-
     const [userName, setUserName] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [benchPressData, setBenchPressData] = useState([]);
+
+
 
     useEffect(() => {
         fetchUserName();
+        fetchExerciseData('Bench Press').then(setBenchPressData);
     }, []);
+
+    const fetchExerciseData = async (exerciseName: any) => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_URL}/exercises/get?exercise_name=${exerciseName}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch exercise data');
+            }
+            const data = await response.json();
+            return data.map(item => ({
+                value: item.weight,
+                label: new Date(item.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
+            }));
+        } catch (error) {
+            console.error('Error fetching exercise data:', error);
+            return [];
+        }
+    };
 
     const fetchUserName = async () => {
         try {
-            const token = await AsyncStorage.getItem('userToken');
-            if (token) {
-                const response = await fetch('http://192.168.1.102:5000/getName', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    setUserName(data.name);
-                } else {
-                    console.error('Failed to fetch user name');
-                }
+            const storedName = await AsyncStorage.getItem('userName');
+            if (storedName) {
+                setUserName(storedName);
             }
         } catch (error) {
             console.error('Error fetching user name:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -97,11 +113,34 @@ export default function HomeScreen() {
 
     const options = ["Week", "Month", "6 Months", "Year"]
 
-    const showOrHidePointer = (ind: number) => {
-        ref.current?.scrollTo({
-            x: ind * 400 - 25
-        }); // adjust as per your UI
-    };
+    const showOrHidePointer = (index: number) => {
+        const currentDate = new Date();
+        let startDate;
+      
+        switch(index) {
+          case 0: // Week
+            startDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 1: // Month
+            startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate());
+            break;
+          case 2: // 6 Months
+            startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 6, currentDate.getDate());
+            break;
+          case 3: // Year
+            startDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate());
+            break;
+          default:
+            startDate = new Date(0); // Show all data
+        }
+      
+        const filteredData = benchPressData.filter(item => {
+          const itemDate = new Date(item.label);
+          return itemDate >= startDate && itemDate <= currentDate;
+        });
+      
+        setBenchPressData(filteredData);
+      };
 
     const items = [
         {
@@ -124,6 +163,14 @@ export default function HomeScreen() {
         scrollX.value = event.contentOffset.x;
     });
 
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#0000ff" />
+            </View>
+        );
+    }
+
     return (
 
         <ParallaxScrollView
@@ -137,7 +184,7 @@ export default function HomeScreen() {
             }
         >
             <ThemedView style={styles.titleContainer}>
-                    <ThemedText type="title">Hello, {userName || 'User'}...</ThemedText>
+                <ThemedText type="title">Hello, {userName || 'User'}...</ThemedText>
                 <BicepEmoji />
             </ThemedView>
 
@@ -172,11 +219,10 @@ export default function HomeScreen() {
                 }}
             />
 
-
             <View style={styles.chart}>
                 <ThemedText type="subtitle">Bench Press</ThemedText>
                 <LineChart
-                    data={data}
+                    data={benchPressData}
                     curved
                     isAnimated
                     height={150}
@@ -356,3 +402,7 @@ const styles = StyleSheet.create({
         color: 'red',
     }
 });
+function setIsLoading(arg0: boolean) {
+    throw new Error('Function not implemented.');
+}
+

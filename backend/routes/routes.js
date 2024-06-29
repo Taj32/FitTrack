@@ -12,6 +12,7 @@ router.get('/private', isAuth);
 
 router.get('/getName', isAuth, getName);  // New route
 
+// exercises
 
 router.get('/public', (req, res, next) => {
     res.status(200).json({ message: "here is your public resource" });
