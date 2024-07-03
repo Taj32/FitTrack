@@ -14,7 +14,9 @@
     },
     "ios": {
       "infoPlist": {
-        "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": true } 
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       },
       "supportsTablet": true
     },
@@ -30,7 +32,8 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "react-native-health"
     ],
     "experiments": {
       "typedRoutes": true
