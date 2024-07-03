@@ -3,8 +3,9 @@ import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Mod
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import React, { SetStateAction, useState } from 'react';
+import React, { SetStateAction, useEffect, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
@@ -74,6 +75,56 @@ export default function WorkoutScreen() {
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [exerciseData, setExerciseData] = useState<ExerciseData[]>([]);
+  const [userToken, setUserToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (token !== null) {
+          setUserToken(token);
+        }
+      } catch (e) {
+        console.error('Failed to load user token.');
+      }
+    };
+
+    getToken();
+  }, []);
+
+  const addExerciseToDatabase = async (exerciseData: {
+    exercise_name: string;
+    weight: number;
+    reps: number;
+    sets: number;
+    date: string;
+  }) => {
+    if (!userToken) {
+      console.error('User token is not available.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://192.168.1.205:5000/exercises/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify(exerciseData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add exercise');
+      }
+
+      const result = await response.json();
+      console.log('Exercise added successfully:', result);
+    } catch (error) {
+      console.error('Error adding exercise:', error);
+    }
+  };
+
 
 
   const handleWorkoutSelect = (workout: Workout) => {
@@ -88,6 +139,24 @@ export default function WorkoutScreen() {
     if (!selectedWorkout) {
       console.log('No workout selected');
       return;
+    }
+
+    const currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+
+    for (let i = 0; i < selectedWorkout.exercises.length; i++) {
+      const exercise = selectedWorkout.exercises[i];
+      for (let j = 0; j < exerciseData[i].logs.length; j++) {
+        const log = exerciseData[i].logs[j];
+        if (log.reps && log.weight) {
+          await addExerciseToDatabase({
+            exercise_name: exercise.name,
+            weight: parseFloat(log.weight),
+            reps: parseInt(log.reps),
+            sets: 1, // Each log entry represents one set
+            date: currentDate,
+          });
+        }
+      }
     }
     
     let fileContent = `Saved workout: ${selectedWorkout.name}\n\n`;
@@ -141,16 +210,13 @@ export default function WorkoutScreen() {
   const renderWorkoutItem = ({ item }: { item: Workout }) => (
     <TouchableOpacity onPress={() => handleWorkoutSelect(item)}>
       <View style={styles.workoutContainer}>
-        <Text style={styles.workoutOptions} >{item.name}</Text>
+        <Text style={styles.workoutOptions}>{item.name}</Text>
         <Ionicons name="caret-forward" size={16} color="gray" />
       </View>
-
-      {/* <RightOutlined /> */}
     </TouchableOpacity>
   );
 
   const renderExerciseItem = ({ item, index }: { item: Exercise; index: number }) => (
-
     <ThemedView style={styles.exerciseContainer}>
       <ThemedText>{item.name}</ThemedText>
       <View style={styles.row}>
@@ -162,18 +228,6 @@ export default function WorkoutScreen() {
       {Array.from({ length: item.set }).map((_, setIndex) => (
         <View key={setIndex} style={styles.row}>
           <Text style={styles.cell}>{setIndex + 1}</Text>
-          {/* <TextInput
-          placeholder="Lbs"
-          value={exerciseData[index].lbs[setIndex]}
-          style={styles.cell}
-          onChangeText={(text) => handleExerciseDataChange(index, 'lbs', text)}
-        />
-        <TextInput
-          placeholder="Reps"
-          value={exerciseData[index].reps[setIndex]}
-          style={styles.cell}
-          onChangeText={(text) => handleExerciseDataChange(index, 'reps', text, setIndex)}
-        /> */}
           <TextInput
             placeholder="Reps"
             style={styles.cell}
@@ -188,7 +242,6 @@ export default function WorkoutScreen() {
           />
         </View>
       ))}
-
     </ThemedView>
   );
 

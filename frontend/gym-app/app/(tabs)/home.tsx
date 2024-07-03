@@ -41,12 +41,18 @@ export default function HomeScreen() {
     const [userName, setUserName] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [benchPressData, setBenchPressData] = useState([]);
+    const [recentWorkouts, setRecentWorkouts] = useState([]);
+
+
+
 
 
 
     useEffect(() => {
         fetchUserName();
-        fetchExerciseData('Bench Press').then(setBenchPressData);
+        //fetchExerciseData('Bench Press').then(setBenchPressData);
+        fetchRecentWorkouts();
+
     }, []);
 
     const fetchExerciseData = async (exerciseName: any) => {
@@ -80,6 +86,27 @@ export default function HomeScreen() {
         } catch (error) {
             console.error('Error fetching user name:', error);
         } finally {
+            //setIsLoading(false);
+        }
+    };
+
+    const fetchRecentWorkouts = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_URL}/exercises/recent`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch recent workouts');
+            }
+            const data = await response.json();
+            setRecentWorkouts(data);
+        } catch (error) {
+            console.error('Error fetching recent workouts:', error);
+        } finally {
+            console.log("done loading!");
             setIsLoading(false);
         }
     };
@@ -116,31 +143,31 @@ export default function HomeScreen() {
     const showOrHidePointer = (index: number) => {
         const currentDate = new Date();
         let startDate;
-      
-        switch(index) {
-          case 0: // Week
-            startDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-            break;
-          case 1: // Month
-            startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate());
-            break;
-          case 2: // 6 Months
-            startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 6, currentDate.getDate());
-            break;
-          case 3: // Year
-            startDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate());
-            break;
-          default:
-            startDate = new Date(0); // Show all data
+
+        switch (index) {
+            case 0: // Week
+                startDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case 1: // Month
+                startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate());
+                break;
+            case 2: // 6 Months
+                startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 6, currentDate.getDate());
+                break;
+            case 3: // Year
+                startDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate());
+                break;
+            default:
+                startDate = new Date(0); // Show all data
         }
-      
+
         const filteredData = benchPressData.filter(item => {
-          const itemDate = new Date(item.label);
-          return itemDate >= startDate && itemDate <= currentDate;
+            const itemDate = new Date(item.label);
+            return itemDate >= startDate && itemDate <= currentDate;
         });
-      
+
         setBenchPressData(filteredData);
-      };
+    };
 
     const items = [
         {
@@ -162,6 +189,84 @@ export default function HomeScreen() {
     const onScrollHandler = useAnimatedScrollHandler((event) => {
         scrollX.value = event.contentOffset.x;
     });
+
+    const WorkoutChart = ({ workout }) => {
+        console.log("--------")
+        console.log("Received workout:", JSON.stringify(workout, null, 2));
+
+        if (!workout || !workout.data || workout.data.length === 0) {
+            return null;
+        }
+
+        // Check if all data points are valid
+        // Transform and ensure all data points are valid
+        const transformedData = workout.data.map(item => {
+            if (typeof item !== 'object' || item === null) {
+                console.warn('Invalid data item:', item);
+                return null;
+            }
+            return {
+                value: typeof item.value === 'number' ? item.value : 0,
+                label: new Date(item.label).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
+            };
+        }).filter(Boolean); // Remove any null items
+
+        if (transformedData.length === 0) {
+            console.log("No valid data points in workout");
+            return null;
+        }
+
+        console.log(transformedData);
+        // Remove the last element
+        //const dataWithoutLast = transformedData.slice(0, -1);
+       // console.log('Transformed data for LineChart (without last):', dataWithoutLast);
+
+
+        const dataTemp = [
+            { value: 15, label: 'Mon' },
+            { value: 30, label: 'Tue' },
+            { value: -23, label: 'Wed' },
+            { value: 40, label: 'Thu' },
+            { value: -16, label: 'Fri' },
+            { value: 40, label: 'Sat' },
+        ];
+
+
+        return (
+            <View style={styles.chart}>
+                <ThemedText type="subtitle">{workout.exercise_name}</ThemedText>
+                <LineChart
+                    data={transformedData}
+                    curved
+                    isAnimated
+                    height={150}
+                    focusEnabled
+                    showTextOnFocus
+                    //animateOnDataChange //--> Why was this causing the error?
+                    color={workout.color}
+                />
+
+                <View style={{ flexDirection: 'row', marginLeft: 30, marginTop: 5 }}>
+                    {options.map((item, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={{
+                                padding: 6,
+                                margin: 4,
+                                backgroundColor: workout.color,
+                                borderRadius: 8,
+                            }}
+                            onPress={() => showOrHidePointer(index)}>
+                            {/* /* , workout.exercise_name */ }
+                            <Text>{item}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+
+            </View>
+        );
+    };
 
     if (isLoading) {
         return (
@@ -219,100 +324,17 @@ export default function HomeScreen() {
                 }}
             />
 
-            <View style={styles.chart}>
-                <ThemedText type="subtitle">Bench Press</ThemedText>
-                <LineChart
-                    data={benchPressData}
-                    curved
-                    isAnimated
-                    height={150}
-                    focusEnabled
-                    showTextOnFocus
-                    animateOnDataChange
-                    color={'orange'}
-                    scrollRef={ref}
-                />
-                <View style={{ flexDirection: 'row', marginLeft: 30, marginTop: 5, }}>
-                    {options.map((item, index) => {
-                        return (
-                            <TouchableOpacity
-                                key={index}
-                                style={{
-                                    padding: 6,
-                                    margin: 4,
-                                    backgroundColor: 'orange',
-                                    borderRadius: 8,
-                                }}
-                                onPress={() => showOrHidePointer(index)}>
-                                <Text>{options[index]}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </View>
-
-            <View style={styles.chart}>
-                <ThemedText type="subtitle">Deadlift</ThemedText>
-                <LineChart
-                    data={data}
-                    curved
-                    isAnimated
-                    height={150}
-                    focusEnabled
-                    showTextOnFocus
-                    animateOnDataChange
-                    color={'#C8A2C8'}
-
-                />
-                <View style={{ flexDirection: 'row', marginLeft: 30, marginTop: 5, }}>
-                    {options.map((item, index) => {
-                        return (
-                            <TouchableOpacity
-                                key={index}
-                                style={{
-                                    padding: 6,
-                                    margin: 4,
-                                    backgroundColor: '#C8A2C8',
-                                    borderRadius: 8,
-                                }}
-                                onPress={() => showOrHidePointer(index)}>
-                                <Text>{options[index]}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </View>
-
-            <View style={styles.chart}>
-                <ThemedText type="subtitle">Squat</ThemedText>
-                <LineChart
-                    data={data}
-                    curved
-                    isAnimated
-                    height={150}
-                    focusEnabled
-                    showTextOnFocus
-                    animateOnDataChange
-                    color={'#98FB98'}
-                />
-                <View style={{ flexDirection: 'row', marginLeft: 30, marginTop: 5, }}>
-                    {options.map((item, index) => {
-                        return (
-                            <TouchableOpacity
-                                key={index}
-                                style={{
-                                    padding: 6,
-                                    margin: 4,
-                                    backgroundColor: '#98FB98',
-                                    borderRadius: 8,
-                                }}
-                                onPress={() => showOrHidePointer(index)}>
-                                <Text>{options[index]}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </View>
+            {recentWorkouts.length > 0 ? (
+                recentWorkouts.map((workout, index) => (
+                    <WorkoutChart key={index} workout={workout} />
+                ))
+            ) : (
+                <ThemedView style={styles.noWorkoutsContainer}>
+                    <ThemedText style={styles.noWorkoutsText}>
+                        Start your fitness journey by adding your workouts!
+                    </ThemedText>
+                </ThemedView>
+            )}
 
             {/* <ThemedView style={styles.stepContainer}>
                 <ThemedText>texttext</ThemedText>
@@ -400,7 +422,17 @@ const styles = StyleSheet.create({
     },
     calendar: {
         color: 'red',
-    }
+    },
+    noWorkoutsContainer: {
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 200,
+    },
+    noWorkoutsText: {
+        textAlign: 'center',
+        fontSize: 18,
+    },
 });
 function setIsLoading(arg0: boolean) {
     throw new Error('Function not implemented.');
