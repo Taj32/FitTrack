@@ -1,3 +1,4 @@
+import { ThemedText } from "@/components/ThemedText";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useState } from "react";
 import { SafeAreaView, View, Text, TextInput, FlatList, StyleSheet, Button, Alert, Dimensions, Image, TouchableOpacity, Modal } from 'react-native';
@@ -8,7 +9,7 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const API_URL = 'http://192.168.1.205:5000';
 
 
@@ -96,6 +97,29 @@ const App = () => {
     }
   };
 
+  const getExerciseStats = (data) => {
+    if (!data || data.length === 0) {
+      return { pr: '---', weight: '---', volume: '---' };
+    }
+
+    let pr = 0;
+    let totalVolume = 0;
+
+    data.forEach(item => {
+      const weight = Number(item.value);
+      if (weight > pr) {
+        pr = weight;
+      }
+      totalVolume += weight;
+    });
+
+    return {
+      pr: pr.toFixed(1),
+      weight: pr.toFixed(1), // Assuming the highest weight is the current weight
+      volume: totalVolume.toFixed(1)
+    };
+  };
+
   const searchFunction = (text: React.SetStateAction<string>) => {
     setSearchText(text);
     text = text.toLowerCase();
@@ -133,48 +157,71 @@ const App = () => {
     </TouchableOpacity>
   );
 
-  const ExerciseModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={modalVisible}
-      onRequestClose={() => setModalVisible(false)}
-    >
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
-          <Text style={styles.modalTitle}>{selectedExercise?.title}</Text>
-          <LineChart
-            data={exerciseData}
-            width={300}
-            height={200}
-            yAxisLabel=""
-            chartConfig={{
-              backgroundColor: "#e26a00",
-              backgroundGradientFrom: "#fb8c00",
-              backgroundGradientTo: "#ffa726",
-              decimalPlaces: 2,
-              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-              style: {
-                borderRadius: 16
-              },
-              propsForDots: {
-                r: "6",
-                strokeWidth: "2",
-                stroke: "#ffa726"
-              }
-            }}
-            bezier
-            style={{
-              marginVertical: 8,
-              borderRadius: 16
-            }}
-          />
+  const ExerciseModal = () => {
+    const stats = getExerciseStats(exerciseData);
+    return (
+      <Modal
+        animationType="slide"
+        //transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        {/* <View style={styles.centeredView}> */}
+        <View style={styles.modalContainer}>
+          {/* <Text style={styles.modalTitle}>{selectedExercise?.title}</Text> */}
+          <ThemedText type="title">{selectedExercise?.title}</ThemedText>
+
+
+          {/* <ThemedText type="subtitle" style="subText">Personal Records</ThemedText> */}
+
+          <Text style={styles.subtext}>Personal Records</Text>
+          <View style={styles.recordContainer}>
+            <Text style={styles.recordText}>PR</Text>
+            <Text>{stats.pr}</Text>
+          </View>
+
+          <View style={styles.recordContainer}>
+            <Text style={styles.recordText}>Weight</Text>
+            <Text>{stats.weight}</Text>
+          </View>
+
+          <View style={styles.recordContainer}>
+            <Text style={styles.recordText}>Volume</Text>
+            <Text>{stats.volume}</Text>
+          </View>
+
+
+          <View style={styles.chart}>
+            {/* <ThemedText type="subtitle">{workout.exercise_name}</ThemedText> */}
+            {/* <LineChart
+                    data={transformedData}
+                    curved
+                    isAnimated
+                    height={150}
+                    focusEnabled
+                    showTextOnFocus
+                    //animateOnDataChange //--> Why was this causing the error?
+                    color={workout.color}
+                /> */}
+
+
+            <LineChart
+              data={exerciseData}
+              width={300}
+              height={200}
+              curved
+              isAnimated
+              color={'#C8A2C8'}
+
+            // style={styles.chart}
+            />
+          </View>
           <Button title="Close" onPress={() => setModalVisible(false)} />
         </View>
-      </View>
-    </Modal>
-  );
+        {/* </View> */}
+      </Modal>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -282,29 +329,65 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 22
+    overflow: 'hidden',
+    //paddingVertical: 200,
+    backgroundColor: "blue",
+    //paddingHorizontal: 0,
+    marginTop: 25
   },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5
+  modalContainer: {
+
+    marginTop: 128,
+    padding: 16,
+    marginHorizontal: 24,
+    backgroundColor: '#f2f1f6',
+    borderRadius: 30,
+    //margin: 70,
+    // backgroundColor: '#f2f1f6', //"white",
+    // borderRadius: 20,
+    // padding: 10,
+    // alignItems: "center",
+    // shadowColor: "#000",
+    // shadowOffset: {
+    //   width: 0,
+    //   height: 2
+    // },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 4,
+    // elevation: 5
   },
   modalTitle: {
     marginBottom: 15,
     textAlign: "center",
     fontSize: 20,
     fontWeight: "bold"
+  },
+  chart: {
+    //rowGap: 10,
+    borderRadius: 30,
+    padding: 16,
+    //height: 300,
+    backgroundColor: 'white',
+    overflow: 'hidden',
+    //flex: 1, //'white',//
+  },
+  subtext: {
+    fontSize: 16,
+    color: 'gray',
+    paddingVertical: 10,
+  },
+  recordContainer: {
+    flexDirection: 'row', alignItems: 'center',
+    //paddingHorizontal: 16,
+    paddingVertical: 15,
+  },
+  recordText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    flex: 1,
+    color: 'black',
   }
+
 });
 
 export default App;

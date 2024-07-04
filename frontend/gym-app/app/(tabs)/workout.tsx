@@ -276,7 +276,7 @@ export default function WorkoutScreen() {
         ListFooterComponent={() => <View style={styles.separator} />}
       />
 
-      <Modal visible={showModal} animationType="slide" >
+      <Modal visible={showModal} animationType="none" >
         <ThemedView style={styles.modalContainer}>
           <ThemedText type="title">{selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}</ThemedText>
           <FlatList
