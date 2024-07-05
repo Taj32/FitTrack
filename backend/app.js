@@ -2,6 +2,7 @@ import express from 'express';
 import sequelize from './utils/database.js';
 import authRouter from './routes/routes.js';  // Rename this import to be more specific
 import exerciseRouter from './routes/exerciseRoutes.js';  // Add this new import
+import workoutRouter from './routes/workoutRoutes.js';
 
 const app = express();
 
@@ -18,6 +19,8 @@ app.use((_, res, next) => {
 // Use separate routers for auth and exercises
 app.use('/auth', authRouter);  // Assuming your current routes are auth-related
 app.use('/exercises', exerciseRouter);  // New exercise routes
+app.use('/workouts', workoutRouter);  // Add this new line
+
 
 // Error handling middleware
 app.use((error, req, res, next) => {
