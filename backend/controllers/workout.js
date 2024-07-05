@@ -1,9 +1,11 @@
 import User from '../models/user.js';
 import Workout from '../models/workout.js';
-import Exercise from '../models/exercise.js';
+import Exercise from '../models/exercise.js';  // Add this line if it's missing
+
+
 
 export const getUserWorkouts = async (req, res) => {
-    const userEmail = req.email; // This comes from the isAuth middleware
+    const userEmail = req.email;
 
     try {
         const user = await User.findOne({ where: { email: userEmail } });
@@ -13,10 +15,6 @@ export const getUserWorkouts = async (req, res) => {
 
         const workouts = await Workout.findAll({
             where: { user_id: user.id },
-            include: [{
-                model: Exercise,
-                through: { attributes: [] } // This will exclude the join table attributes
-            }],
             order: [['date_created', 'DESC']]
         });
 
@@ -29,7 +27,7 @@ export const getUserWorkouts = async (req, res) => {
 
 export const addWorkout = async (req, res) => {
     const { name, exercises } = req.body;
-    const userEmail = req.email; // This comes from the isAuth middleware
+    const userEmail = req.email;
 
     try {
         console.log('Request body:', req.body);
@@ -46,29 +44,14 @@ export const addWorkout = async (req, res) => {
         const workout = await Workout.create({
             name,
             date_created: new Date(),
-            user_id: user.id  // Make sure this matches your model definition (user_id or userId)
+            user_id: user.id,
+            exercises: req.body.exercises
         });
         console.log('Created workout:', workout.toJSON());
 
-        if (exercises && exercises.length > 0) {
-            console.log('Adding exercises to workout...');
-            const exerciseInstances = await Exercise.findAll({
-                where: { id: exercises.map(e => e.id) }
-            });
-            await workout.addExercises(exerciseInstances);
-            console.log('Exercises added to workout');
-        }
-
-        console.log('Fetching workout with exercises...');
-        const workoutWithExercises = await Workout.findOne({
-            where: { id: workout.id },
-            include: [Exercise]
-        });
-        console.log('Fetched workout with exercises:', workoutWithExercises ? workoutWithExercises.toJSON() : 'Workout not found');
-
         res.status(201).json({ 
             message: 'Workout added successfully', 
-            workout: workoutWithExercises ? workoutWithExercises.toJSON() : null 
+            workout: workout.toJSON()
         });
     } catch (error) {
         console.error('Error in addWorkout:', error);
@@ -103,3 +86,45 @@ export const removeWorkout = async (req, res) => {
     }
 };
 
+export const completeWorkout = async (req, res) => {
+    const { workoutId } = req.params;
+    const userEmail = req.email;
+    const { exerciseData } = req.body; // This will contain the actual exercise data
+    console.log("running this part");
+
+    try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log("trying to find");
+
+        const workout = await Workout.findOne({
+            where: { id: workoutId, user_id: user.id }
+        });
+
+        if (!workout) {
+            return res.status(404).json({ message: 'Workout not found or not owned by user' });
+        }
+
+        const exercisesToCreate = workout.exercises.map((exercise, index) => ({
+            exercise_name: exercise.name,
+            weight: exerciseData[index].weight,
+            reps: exerciseData[index].reps,
+            sets: exercise.sets,
+            date: new Date(),
+            userId: user.id
+        }));
+
+        const createdExercises = await Exercise.bulkCreate(exercisesToCreate);
+
+        res.status(200).json({ 
+            message: 'Workout completed successfully', 
+            exercises: createdExercises 
+        });
+    } catch (error) {
+        console.error('Error completing workout:', error);
+        res.status(500).json({ message: 'Error completing workout', error: error.message });
+    }
+};

@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../utils/database.js';
 import User from './user.js';
-import Exercise from './exercise.js';
 
 const Workout = sequelize.define('Workout', {
     id: {
@@ -26,6 +25,11 @@ const Workout = sequelize.define('Workout', {
             key: 'id'
         },
         field: 'user_id'
+    },
+    exercises: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        defaultValue: []
     }
 }, {
     timestamps: false
@@ -33,9 +37,5 @@ const Workout = sequelize.define('Workout', {
 
 Workout.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(Workout, { foreignKey: 'user_id' });
-
-// Many-to-Many relationship between Workout and Exercise
-Workout.belongsToMany(Exercise, { through: 'WorkoutExercises' });
-Exercise.belongsToMany(Workout, { through: 'WorkoutExercises' });
 
 export default Workout;
