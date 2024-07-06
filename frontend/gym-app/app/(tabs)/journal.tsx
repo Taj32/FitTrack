@@ -8,7 +8,13 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { DateWidget } from '@/components/DateWidget';
 import { NavigationContainer } from '@react-navigation/native';
+import { format, parseISO } from 'date-fns';
 
+
+import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_URL = 'http://192.168.1.205:5000';
 
 const workoutLogs = [
   { day: 'Mon', dateDigit: '9', name: 'Strength Training', exercises: ['3x10 Bench Press', '3x12 Squats', '3x15 Deadlifts'] },
@@ -21,9 +27,85 @@ const workoutLogs = [
 ];
 
 export default function JournalScreen() {
+  const [workouts, setWorkouts] = useState([]);
+
+  useEffect(() => {
+    fetchWorkouts();
+  }, []);
+
+  const fetchWorkouts = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        console.log('No token found');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/workouts/user-workouts`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch workouts');
+      }
+
+      const data = await response.json();
+      setWorkouts(data);
+
+    } catch (error) {
+      console.error('Error fetching workouts:', error);
+    }
+  };
+
+  const groupExercises = (exercises) => {
+    const grouped = [];
+    let currentExercise = null;
+    let setCount = 0;
+
+    exercises.forEach((exercise) => {
+      if (currentExercise && currentExercise.name === exercise.name) {
+        setCount++;
+      } else {
+        if (currentExercise) {
+          grouped.push({ ...currentExercise, sets: setCount });
+        }
+        currentExercise = exercise;
+        setCount = 1;
+      }
+    });
+
+    if (currentExercise) {
+      grouped.push({ ...currentExercise, sets: setCount });
+    }
+
+    return grouped;
+  };
+
+  const formatDay = (dateString) => {
+    console.log('Original dateString:', dateString);
+    const date = parseISO(dateString);
+    console.log('Parsed date object:', date);
+    const formattedDay = format(date, 'EEE');
+    console.log('Formatted day:', formattedDay);
+    return formattedDay;
+  };
+  
+  const formatDateDigit = (dateString) => {
+    const date = parseISO(dateString);
+    const dateDigit = format(date, 'd');
+    console.log('Formatted date digit:', dateDigit);
+    return dateDigit;
+  };
+  
+
+
   return (
     <SafeAreaView style={styles.container}>
-      
+
       <ThemedView style={styles.buttonContainer}>
         <ThemedText style={styles.editButton} onPress={() => alert('Edit pressed')}>
           Edit
@@ -63,13 +145,18 @@ export default function JournalScreen() {
         </View> */}
 
         {/* workout logs */}
-        {workoutLogs.map((log, index) => (
+        {workouts.map((workout, index) => (
           <View key={index} style={styles.workoutLog}>
-            <DateWidget day={log.day} dateDigit={log.dateDigit} />
+            <DateWidget
+              day={formatDay(workout.date_created)}
+              dateDigit={formatDateDigit(workout.date_created)}
+            />
             <View style={styles.workoutInfo}>
-              <Text style={styles.workoutName}>{log.name}</Text>
-              {log.exercises.map((exercise, exIndex) => (
-                <Text key={exIndex} style={styles.exerciseName}>{exercise}</Text>
+              <Text style={styles.workoutName}>{workout.name}</Text>
+              {groupExercises(workout.exercises).map((exercise, exIndex) => (
+                <Text key={exIndex} style={styles.exerciseName}>
+                  {`${exercise.sets}x ${exercise.name}`}
+                </Text>
               ))}
               <Text></Text>
             </View>

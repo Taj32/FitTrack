@@ -2,7 +2,7 @@ import { StyleSheet, View, Text } from 'react-native';
 
 
 export function DateWidget({day, dateDigit}) {
-
+    console.log("this: ", dateDigit);
     return(
         <View style={styles.container}>
             <View style = {styles.topContainer}>
