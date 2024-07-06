@@ -1,6 +1,11 @@
-import User from '../models/user.js';
-import Exercise from '../models/exercise.js'; // You'll need to create this model
+import { User, Workout, Exercise, sequelize } from '../models/index.js';
+
+
+// import User from '../models/user.js';
+// import Exercise from '../models/exercise.js'; // You'll need to create this model
 import { Op } from 'sequelize';
+
+
 
 export const addExercise = async (req, res) => {
     const { exercise_name, weight, reps, sets, date } = req.body;

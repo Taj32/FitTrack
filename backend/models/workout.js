@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../utils/database.js';
 import User from './user.js';
+import Exercise from './exercise.js';
 
 const Workout = sequelize.define('Workout', {
     id: {
@@ -19,12 +20,7 @@ const Workout = sequelize.define('Workout', {
     },
     user_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: User,
-            key: 'id'
-        },
-        field: 'user_id'
+        allowNull: false
     },
     exercises: {
         type: DataTypes.JSON,
@@ -35,7 +31,8 @@ const Workout = sequelize.define('Workout', {
     timestamps: false
 });
 
-Workout.belongsTo(User, { foreignKey: 'user_id' });
-User.hasMany(Workout, { foreignKey: 'user_id' });
+// Workout.belongsTo(User, { foreignKey: 'user_id' });
+// Workout.hasMany(Exercise);
+// User.hasMany(Workout, { foreignKey: 'user_id' });
 
 export default Workout;

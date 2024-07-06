@@ -2,7 +2,9 @@ import bcrypt from 'bcryptjs';
 
 import jwt from 'jsonwebtoken';
 
-import User from '../models/user.js';
+import { User, Workout, Exercise, sequelize } from '../models/index.js';
+
+
 
 const signup = (req, res, next) => {
     // checks if email already exists
