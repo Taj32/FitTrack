@@ -251,6 +251,16 @@ export default function WorkoutScreen() {
   };
 
   const handleSave = async () => {
+
+    if (!areAllInputsFilled()) {
+      alert('Please fill in all weight and rep fields before saving.');
+      return;
+    }
+  
+    const workoutCompletionData: WorkoutCompletionData = {
+      exerciseData: [],
+    };
+
     if (selectedWorkout) {
       const workoutPayload = {
         name: selectedWorkout.name,
@@ -382,6 +392,15 @@ export default function WorkoutScreen() {
 
   //Unique worko
 
+  // function areAllInputsFilled(): boolean {
+  //   return selectedWorkout.exercises.every((exercise) => {
+  //     return [...Array(exercise.set)].every((_, setIndex) => {
+  //       const setData = exerciseData[exercise.id]?.[setIndex];
+  //       return setData && setData.weight !== '' && setData.reps !== '';
+  //     });
+  //   });
+  // }
+
   const renderExerciseItem = ({ item, index }: { item: Exercise; index: number }) => (
     <ThemedView style={styles.exerciseContainer}>
       <ThemedText>{item.name}</ThemedText>
@@ -509,7 +528,7 @@ export default function WorkoutScreen() {
       </ThemedView>
 
 
-      {/* static workouts */}
+      {/* static workouts
       <FlatList
         data={workouts}
         renderItem={renderWorkoutItem}
@@ -517,7 +536,7 @@ export default function WorkoutScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={() => <View style={styles.separator} />}
         ListFooterComponent={() => <View style={styles.separator} />}
-      />
+      /> */}
 
       {/* Dynamic cases */}
       <FlatList
@@ -527,6 +546,7 @@ export default function WorkoutScreen() {
           <TouchableOpacity onPress={() => handleWorkoutPress(item)}>
             <View style={styles.workoutContainer}>
               <Text style={styles.workoutOptions}>{item.name}</Text>
+              <Ionicons name="caret-forward" size={16} color="gray" />
             </View>
           </TouchableOpacity>
         )}
@@ -534,33 +554,6 @@ export default function WorkoutScreen() {
         ListHeaderComponent={() => <View style={styles.separator} />}
         ListFooterComponent={() => <View style={styles.separator} />}
       ></FlatList>
-
-      {/* <Modal visible={showModal} animationType="none">
-        <ThemedView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={handleCloseModal} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#007AFF" />
-            </TouchableOpacity>
-            <ThemedText type="title" style={styles.modalTitle}>
-              {selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}
-            </ThemedText>
-          </View>
-          <FlatList
-            data={selectedWorkout ? selectedWorkout.exercises : []}
-            renderItem={renderExerciseItem}
-            ListHeaderComponent={
-              <View style={styles.workoutHeader}>
-              </View>
-            }
-            keyExtractor={(item) => item.id.toString()}
-            ListFooterComponent={
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveWorkout}>
-                <ThemedText>Save Workout</ThemedText>
-              </TouchableOpacity>
-            }
-          />
-        </ThemedView>
-      </Modal> */}
 
       {/* Dynamic modal */}
 
@@ -609,7 +602,7 @@ export default function WorkoutScreen() {
                   ))}
                 </View>
               ))}
-              <Button title="Save" onPress={handleSave} />
+              <Button title="Save" onPress={handleSave} disabled={!areAllInputsFilled} />
             </ScrollView>
           </ThemedView>
         </Modal>

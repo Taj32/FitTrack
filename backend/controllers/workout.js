@@ -108,20 +108,49 @@ export const removeWorkout = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const workout = await Workout.findOne({
-            where: { id: workoutId, user_id: user.id }
-        });
+        // Start a transaction
+        const t = await sequelize.transaction();
 
-        if (!workout) {
-            return res.status(404).json({ message: 'Workout not found or not owned by user' });
+        try {
+            // Find the workout
+            const workout = await Workout.findOne({
+                where: { id: workoutId, user_id: user.id },
+                transaction: t
+            });
+
+            if (!workout) {
+                await t.rollback();
+                return res.status(404).json({ message: 'Workout not found or not owned by user' });
+            }
+
+            console.log('Found workout:', workout.toJSON());
+
+            // Remove associated exercises
+            const deletedExercisesCount = await Exercise.destroy({
+                where: { workout_id: workoutId },
+                transaction: t
+            });
+
+            console.log(`Deleted ${deletedExercisesCount} exercises`);
+
+            // Remove the workout
+            await workout.destroy({ transaction: t });
+
+            // Commit the transaction
+            await t.commit();
+
+            res.json({ 
+                message: 'Workout and associated exercises removed successfully',
+                deletedExercisesCount
+            });
+        } catch (error) {
+            // If there's an error, rollback the transaction
+            await t.rollback();
+            throw error;
         }
-
-        await workout.destroy();
-
-        res.json({ message: 'Workout removed successfully' });
     } catch (error) {
-        console.error('Error removing workout:', error);
-        res.status(500).json({ message: 'Error removing workout', error: error.message });
+        console.error('Error removing workout and exercises:', error);
+        res.status(500).json({ message: 'Error removing workout and exercises', error: error.message });
     }
 };
 
