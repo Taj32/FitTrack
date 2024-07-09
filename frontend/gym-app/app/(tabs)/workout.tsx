@@ -16,9 +16,14 @@ const API_URL = 'http://192.168.1.205:5000';
 
 export default function WorkoutScreen() {
 
-  interface ExerciseData {
-    logs: { reps: string; weight: string }[];
-  }
+  type ExerciseData = {
+    weights: number[];
+    reps: number[];
+  };
+
+  type WorkoutCompletionData = {
+    exerciseData: ExerciseData[];
+  };
 
   interface Workout {
     id: number;
@@ -123,7 +128,7 @@ export default function WorkoutScreen() {
   }, [userToken]);
 
 
-  
+
   const addWorkout = async (workout: { name: string; exercises: { name: string; sets: number }[] }) => {
     try {
       const response = await fetch(`${API_URL}/workouts/add`, {
@@ -153,42 +158,34 @@ export default function WorkoutScreen() {
     }
   };
 
-  
+
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedWorkout(null);
     setExerciseData([]);
   };
 
-  const completeWorkout = async (workoutId: number, exerciseData: Array<{
-    weights: number[],
-    reps: number[]
-  }>) => {
-    if (!userToken) {
-      console.error('User token is not available.');
-      return;
-    }
-
+  async function completeWorkout(workoutId: string, data: WorkoutCompletionData) {
     try {
-      const response = await fetch(`http://192.168.1.205:5000/workouts/complete/${workoutId}`, {
+      const response = await fetch(`${API_URL}/workouts/complete/${workoutId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${userToken}`
         },
-        body: JSON.stringify({ exerciseData }),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         throw new Error('Failed to complete workout');
       }
 
-      const result = await response.json();
-      console.log('Workout completed successfully:', result);
+      return await response.json();
     } catch (error) {
       console.error('Error completing workout:', error);
+      throw error;
     }
-  };
+  }
 
   const fetchWorkouts = async () => {
 
@@ -263,11 +260,38 @@ export default function WorkoutScreen() {
         }))
       };
 
+      const workoutCompletionData: WorkoutCompletionData = {
+        exerciseData: [],
+      };
+    
+      selectedWorkout.exercises.forEach((exercise) => {
+        const exerciseInfo: ExerciseData = {
+          weights: [],
+          reps: [],
+        };
+    
+        [...Array(exercise.set)].forEach((_, setIndex) => {
+          const setData = exerciseData[exercise.id]?.[setIndex];
+          if (setData) {
+            exerciseInfo.weights.push(Number(setData.weight) || 0);
+            exerciseInfo.reps.push(Number(setData.reps) || 0);
+          }
+        });
+    
+        workoutCompletionData.exerciseData.push(exerciseInfo);
+      });
+
       try {
         const response = await addWorkout(workoutPayload);
         //console.log(response.exercises.id);
         console.log('Workout added successfully.', response);
         console.log(response.workout.id);
+        const workoutId = response.workout.id;
+
+        console.log("popopopopopopopopopopop");
+        console.log("workoutCompletionData", workoutCompletionData);
+        const completionResult = await completeWorkout(workoutId, workoutCompletionData);
+        console.log("workout completed successfully");
       } catch (error) {
         console.error('Error adding workout:', error);
       }
@@ -559,7 +583,7 @@ export default function WorkoutScreen() {
                 {selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}
               </ThemedText>
             </View>
-            
+
 
             <ScrollView contentContainerStyle={styles.modalContent}>
               <Text style={styles.modalTitle}>{selectedWorkout.name}</Text>
@@ -734,6 +758,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  
+
 
 });
