@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Modal, SafeAreaView, Text, View } from 'react-native';
+import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Modal, SafeAreaView, Text, View, ScrollView, Button } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -8,6 +8,10 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
+
+
+
+const API_URL = 'http://192.168.1.205:5000';
 
 
 export default function WorkoutScreen() {
@@ -28,66 +32,76 @@ export default function WorkoutScreen() {
     set: number;
   }
 
-  const [workouts, setWorkouts] = useState([
-    {
-      id: 1, name: 'Full Body Workout', exercises: [
-        { id: 1, name: 'Bench Press', set: 1 },
-        { id: 2, name: 'Squats', set: 1 },
-        { id: 3, name: 'Deadlifts', set: 1 },
-      ]
-    },
-    {
-      id: 2, name: 'Upper Body Workout', exercises: [
-        { id: 4, name: 'Overhead Press', set: 3 },
-        { id: 5, name: 'Pull-ups', set: 3 },
-        { id: 6, name: 'Bicep Curls', set: 3 },
-      ]
-    },
-    {
-      id: 3, name: 'Lower Body Workout', exercises: [
-        { id: 7, name: 'Squats', set: 4 },
-        { id: 8, name: 'Lunges', set: 3 },
-        { id: 9, name: 'Leg Press', set: 3 },
-      ]
-    },
-    {
-      id: 4, name: 'Ab Workout', exercises: [
-        { id: 10, name: 'Crunches', set: 3 },
-        { id: 11, name: 'Planks', set: 3 },
-        { id: 12, name: 'Russian Twists', set: 3 },
-      ]
-    },
-    {
-      id: 5, name: 'Leg Workout', exercises: [
-        { id: 13, name: 'Squats', set: 4 },
-        { id: 14, name: 'Deadlifts', set: 3 },
-        { id: 15, name: 'Calf Raises', set: 3 },
-      ]
-    },
-    {
-      id: 6, name: 'HIIT Workout', exercises: [
-        { id: 16, name: 'Burpees', set: 4 },
-        { id: 17, name: 'Mountain Climbers', set: 4 },
-        { id: 18, name: 'Jump Squats', set: 4 },
-      ]
-    },
-  ]);
+  // const [workouts, setWorkouts] = useState([
+  //   {
+  //     id: 1, name: 'Full Body Workout', exercises: [
+  //       { id: 1, name: 'Bench Press', set: 1 },
+  //       { id: 2, name: 'Squats', set: 1 },
+  //       { id: 3, name: 'Deadlifts', set: 1 },
+  //     ]
+  //   },
+  //   {
+  //     id: 2, name: 'Upper Body Workout', exercises: [
+  //       { id: 4, name: 'Overhead Press', set: 3 },
+  //       { id: 5, name: 'Pull-ups', set: 3 },
+  //       { id: 6, name: 'Bicep Curls', set: 3 },
+  //     ]
+  //   },
+  //   {
+  //     id: 3, name: 'Lower Body Workout', exercises: [
+  //       { id: 7, name: 'Squats', set: 4 },
+  //       { id: 8, name: 'Lunges', set: 3 },
+  //       { id: 9, name: 'Leg Press', set: 3 },
+  //     ]
+  //   },
+  //   {
+  //     id: 4, name: 'Ab Workout', exercises: [
+  //       { id: 10, name: 'Crunches', set: 3 },
+  //       { id: 11, name: 'Planks', set: 3 },
+  //       { id: 12, name: 'Russian Twists', set: 3 },
+  //     ]
+  //   },
+  //   {
+  //     id: 5, name: 'Leg Workout', exercises: [
+  //       { id: 13, name: 'Squats', set: 4 },
+  //       { id: 14, name: 'Deadlifts', set: 3 },
+  //       { id: 15, name: 'Calf Raises', set: 3 },
+  //     ]
+  //   },
+  //   {
+  //     id: 6, name: 'HIIT Workout', exercises: [
+  //       { id: 16, name: 'Burpees', set: 4 },
+  //       { id: 17, name: 'Mountain Climbers', set: 4 },
+  //       { id: 18, name: 'Jump Squats', set: 4 },
+  //     ]
+  //   },
+  // ]);
 
-  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  const [userToken, setUserToken] = useState<string | null>(null);
+
+
+  //const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [exerciseData, setExerciseData] = useState<ExerciseData[]>([]);
-  const [userToken, setUserToken] = useState<string | null>(null);
   const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false);
+
+
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+
 
   const handleAddWorkoutPress = () => {
     setShowAddWorkoutModal(true);
   };
 
   useEffect(() => {
+    console.log("------ workout.tsx starts here.. ----");
     const getToken = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
         if (token !== null) {
+          console.log("setting...");
           setUserToken(token);
         }
       } catch (e) {
@@ -96,40 +110,15 @@ export default function WorkoutScreen() {
     };
 
     getToken();
+    console.log("xxx");
   }, []);
 
-  const addExerciseToDatabase = async (exerciseData: {
-    exercise_name: string;
-    weight: number;
-    reps: number;
-    sets: number;
-    date: string;
-  }) => {
-    if (!userToken) {
-      console.error('User token is not available.');
-      return;
+  useEffect(() => {
+    if (userToken) {
+      fetchWorkouts();
     }
+  }, [userToken]);
 
-    try {
-      const response = await fetch('http://192.168.1.205:5000/exercises/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}`
-        },
-        body: JSON.stringify(exerciseData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add exercise');
-      }
-
-      const result = await response.json();
-      console.log('Exercise added successfully:', result);
-    } catch (error) {
-      console.error('Error adding exercise:', error);
-    }
-  };
 
   const addWorkout = async (workoutName: string, exercises: { name: string, sets: number }[]) => {
     if (!userToken) {
@@ -138,6 +127,7 @@ export default function WorkoutScreen() {
     }
 
     try {
+      console.log(userToken);
       const response = await fetch('http://192.168.1.205:5000/workouts/add', {
         method: 'POST',
         headers: {
@@ -200,6 +190,59 @@ export default function WorkoutScreen() {
     }
   };
 
+  const fetchWorkouts = async () => {
+
+    console.log(userToken);
+    try {
+      const response = await fetch(`${API_URL}/workouts/user-workouts`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        }
+        //body: JSON.stringify({ exerciseData }),
+      });
+
+      const data = await response.json();
+
+      console.log('Fetched data:', JSON.stringify(data, null, 2));
+
+      // Filter workouts to ensure unique names
+      const uniqueWorkouts = data.filter(
+        (workout, index, self) => index === self.findIndex((w) => w.name === workout.name)
+      );
+
+      setWorkouts(uniqueWorkouts);
+    } catch (error) {
+      console.error('Error fetching workouts:', error);
+    }
+  };
+
+
+  // Dynamic cases
+  const handleWorkoutPress = (workout: Workout) => {
+    // Create a unique copy of the workout
+    const uniqueWorkout = {
+      //id: Date.now(), // Using current timestamp as a unique ID
+      name: `${workout.name}`,
+      exercises: workout.exercises.map(exercise => ({
+        //id: exercise.id,
+        //weight: "",
+        name: exercise.name,
+        set: exercise.sets
+      }))
+    };
+
+    // Set the selected workout and show the modal
+    setSelectedWorkout(uniqueWorkout);
+    setModalVisible(true);
+
+
+
+    // Print the unique workout details
+    console.log('reference id', workout.id);
+    console.log('Unique Workout:', uniqueWorkout);
+  };
 
 
   const handleWorkoutSelect = (workout: Workout) => {
@@ -271,6 +314,8 @@ export default function WorkoutScreen() {
     </TouchableOpacity>
   );
 
+  //Unique worko
+
   const renderExerciseItem = ({ item, index }: { item: Exercise; index: number }) => (
     <ThemedView style={styles.exerciseContainer}>
       <ThemedText>{item.name}</ThemedText>
@@ -300,10 +345,6 @@ export default function WorkoutScreen() {
     </ThemedView>
   );
 
-
-  function handleModalToggle(): ((event: import("react-native").GestureResponderEvent) => void) | undefined {
-    throw new Error('Function not implemented.');
-  }
 
   const AddWorkoutModal = ({ visible, onClose, onAdd }) => {
     const [workoutName, setWorkoutName] = useState('');
@@ -401,6 +442,8 @@ export default function WorkoutScreen() {
         <Ionicons name="fitness" size={50} color="black" />
       </ThemedView>
 
+
+      {/* static workouts */}
       <FlatList
         data={workouts}
         renderItem={renderWorkoutItem}
@@ -410,7 +453,23 @@ export default function WorkoutScreen() {
         ListFooterComponent={() => <View style={styles.separator} />}
       />
 
-      <Modal visible={showModal} animationType="none">
+      {/* Dynamic cases */}
+      <FlatList
+        data={workouts}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => handleWorkoutPress(item)}>
+            <View style={styles.workoutContainer}>
+              <Text style={styles.workoutOptions}>{item.name}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListHeaderComponent={() => <View style={styles.separator} />}
+        ListFooterComponent={() => <View style={styles.separator} />}
+      ></FlatList>
+
+      {/* <Modal visible={showModal} animationType="none">
         <ThemedView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={handleCloseModal} style={styles.backButton}>
@@ -435,7 +494,56 @@ export default function WorkoutScreen() {
             }
           />
         </ThemedView>
-      </Modal>
+      </Modal> */}
+
+      {/* Dynamic modal */}
+
+      {selectedWorkout && (
+        <Modal
+          animationType="slide"
+          transparent={false}
+          visible={modalVisible}
+          onRequestClose={() => {
+            setModalVisible(!modalVisible);
+          }}
+        >
+          <ThemedView style={styles.modalContainer}>
+
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={handleCloseModal} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color="#007AFF" />
+              </TouchableOpacity>
+              <ThemedText type="title" style={styles.modalTitle}>
+                {selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}
+              </ThemedText>
+            </View>
+            
+            <ScrollView contentContainerStyle={styles.modalContent}>
+              {selectedWorkout.exercises.map((exercise, index) => (
+                <View key={exercise.id} style={styles.exerciseContainer}>
+                  <Text style={styles.exerciseName}>{exercise.name}</Text>
+                  {[...Array(exercise.set)].map((_, setIndex) => (
+                    <View key={setIndex} style={styles.setContainer}>
+                      <Text>Set {setIndex + 1}: </Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="weight"
+                        keyboardType="numeric"
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="reps"
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  ))}
+                </View>
+              ))}
+              <Button title="Save" onPress={() => console.log('Save pressed')} />
+            </ScrollView>
+          </ThemedView>
+        </Modal>
+      )}
 
     </SafeAreaView>
 
