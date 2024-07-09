@@ -82,13 +82,16 @@ export default function WorkoutScreen() {
 
   //const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [exerciseData, setExerciseData] = useState<ExerciseData[]>([]);
+  // const [exerciseData, setExerciseData] = useState<ExerciseData[]>([]);
   const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false);
 
 
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  const [exerciseData, setExerciseData] = useState<{ [exerciseId: number]: { [setIndex: number]: { weight: string, reps: string } } }>({});
+
+
 
 
   const handleAddWorkoutPress = () => {
@@ -120,40 +123,37 @@ export default function WorkoutScreen() {
   }, [userToken]);
 
 
-  const addWorkout = async (workoutName: string, exercises: { name: string, sets: number }[]) => {
-    if (!userToken) {
-      console.error('User token is not available.');
-      return null;
-    }
-
+  
+  const addWorkout = async (workout: { name: string; exercises: { name: string; sets: number }[] }) => {
     try {
-      console.log(userToken);
-      const response = await fetch('http://192.168.1.205:5000/workouts/add', {
+      const response = await fetch(`${API_URL}/workouts/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${userToken}`
         },
-        body: JSON.stringify({
-          name: workoutName,
-          exercises: exercises
-        }),
+        body: JSON.stringify(workout)
       });
-
       if (!response.ok) {
-        throw new Error('Failed to add workout');
+        throw new Error('Network response was not ok');
       }
+      //console.log(response.id);
 
-      const result = await response.json();
-      console.log('Workout added successfully:', result);
-      console.log(result.workout.id);
-      return result.workout.id; // Assuming the API returns the workout ID
+      //const data = await response.json();
+      //console.log('Workout structure:', JSON.stringify(data, null, 2));
+      //const data = await response.json();
+
+      //console.log('Fetched data1:', JSON.stringify(data, null, 2));
+
+      // console.log(data.id);
+      return await response.json();
     } catch (error) {
       console.error('Error adding workout:', error);
-      return null;
+      throw error;
     }
   };
 
+  
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedWorkout(null);
@@ -223,7 +223,7 @@ export default function WorkoutScreen() {
   const handleWorkoutPress = (workout: Workout) => {
     // Create a unique copy of the workout
     const uniqueWorkout = {
-      //id: Date.now(), // Using current timestamp as a unique ID
+      id: Date.now(), // Using current timestamp as a unique ID
       name: `${workout.name}`,
       exercises: workout.exercises.map(exercise => ({
         //id: exercise.id,
@@ -243,6 +243,48 @@ export default function WorkoutScreen() {
     console.log('reference id', workout.id);
     console.log('Unique Workout:', uniqueWorkout);
   };
+
+  // dynamic 
+
+  const handleInputChange = (exerciseId: number, setIndex: number, field: string, value: string) => {
+    setExerciseData(prevState => {
+      const updatedExercise = { ...prevState[exerciseId], [setIndex]: { ...prevState[exerciseId]?.[setIndex], [field]: value } };
+      return { ...prevState, [exerciseId]: updatedExercise };
+    });
+  };
+
+  const handleSave = async () => {
+    if (selectedWorkout) {
+      const workoutPayload = {
+        name: selectedWorkout.name,
+        exercises: selectedWorkout.exercises.map(exercise => ({
+          name: exercise.name,
+          sets: exercise.set
+        }))
+      };
+
+      try {
+        const response = await addWorkout(workoutPayload);
+        //console.log(response.exercises.id);
+        console.log('Workout added successfully.', response);
+        console.log(response.workout.id);
+      } catch (error) {
+        console.error('Error adding workout:', error);
+      }
+
+      console.log('Workout Name:', selectedWorkout.name);
+      selectedWorkout.exercises.forEach(exercise => {
+        console.log('Exercise:', exercise.name);
+        [...Array(exercise.set)].forEach((_, setIndex) => {
+          const setData = exerciseData[exercise.id]?.[setIndex];
+          console.log(`Set ${setIndex + 1}: Weight: ${setData?.weight || ''}, Reps: ${setData?.reps || ''}`);
+        });
+      });
+    }
+    setModalVisible(false); // Close the modal
+  };
+
+
 
 
   const handleWorkoutSelect = (workout: Workout) => {
@@ -518,8 +560,10 @@ export default function WorkoutScreen() {
               </ThemedText>
             </View>
             
+
             <ScrollView contentContainerStyle={styles.modalContent}>
-              {selectedWorkout.exercises.map((exercise, index) => (
+              <Text style={styles.modalTitle}>{selectedWorkout.name}</Text>
+              {selectedWorkout.exercises.map(exercise => (
                 <View key={exercise.id} style={styles.exerciseContainer}>
                   <Text style={styles.exerciseName}>{exercise.name}</Text>
                   {[...Array(exercise.set)].map((_, setIndex) => (
@@ -528,18 +572,20 @@ export default function WorkoutScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="weight"
-                        keyboardType="numeric"
+                        //keyboardType="numeric"
+                        onChangeText={(value) => handleInputChange(exercise.id, setIndex, 'weight', value)}
                       />
                       <TextInput
                         style={styles.input}
                         placeholder="reps"
-                        keyboardType="numeric"
+                        //keyboardType="numeric"
+                        onChangeText={(value) => handleInputChange(exercise.id, setIndex, 'reps', value)}
                       />
                     </View>
                   ))}
                 </View>
               ))}
-              <Button title="Save" onPress={() => console.log('Save pressed')} />
+              <Button title="Save" onPress={handleSave} />
             </ScrollView>
           </ThemedView>
         </Modal>
@@ -676,5 +722,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '100%',
+    maxHeight: '100%',
+  },
+  exerciseName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  
 
 });
