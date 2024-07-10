@@ -10,28 +10,32 @@ import { DateWidget } from '@/components/DateWidget';
 import { NavigationContainer } from '@react-navigation/native';
 import { format, parseISO, startOfMonth, isSameMonth } from 'date-fns';
 
+import { useState, useEffect, useRef } from 'react';
+import { Animated, } from 'react-native';
 
-
-import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = 'http://192.168.1.205:5000';
 
-const workoutLogs = [
-  { day: 'Mon', dateDigit: '9', name: 'Strength Training', exercises: ['3x10 Bench Press', '3x12 Squats', '3x15 Deadlifts'] },
-  { day: 'Tue', dateDigit: '10', name: 'Cardio Day', exercises: ['30 min Treadmill Run', '20 min Jump Rope', '10 min Cool Down Stretch'] },
-  { day: 'Wed', dateDigit: '11', name: 'Upper Body Focus', exercises: ['4x8 Pull-ups', '3x12 Shoulder Press', '3x15 Tricep Dips', '3x12 Bicep Curls'] },
-  { day: 'Thur', dateDigit: '12', name: 'Leg Day', exercises: ['4x10 Leg Press', '3x12 Lunges', '3x15 Calf Raises', '3x20 Leg Extensions'] },
-  { day: 'Fri', dateDigit: '13', name: 'HIIT Workout', exercises: ['5 rounds of: 30s Burpees', '30s Mountain Climbers', '30s High Knees', '30s Rest'] },
-  { day: 'Sat', dateDigit: '14', name: 'Core and Flexibility', exercises: ['3x20 Crunches', '3x30s Planks', '15 min Yoga Flow', '10 min Foam Rolling'] },
-  { day: 'Sun', dateDigit: '15', name: 'Active Recovery', exercises: ['45 min Brisk Walk', '20 min Light Stretching', '15 min Meditation'] },
-];
+// const workoutLogs = [
+//   { day: 'Mon', dateDigit: '9', name: 'Strength Training', exercises: ['3x10 Bench Press', '3x12 Squats', '3x15 Deadlifts'] },
+//   { day: 'Tue', dateDigit: '10', name: 'Cardio Day', exercises: ['30 min Treadmill Run', '20 min Jump Rope', '10 min Cool Down Stretch'] },
+//   { day: 'Wed', dateDigit: '11', name: 'Upper Body Focus', exercises: ['4x8 Pull-ups', '3x12 Shoulder Press', '3x15 Tricep Dips', '3x12 Bicep Curls'] },
+//   { day: 'Thur', dateDigit: '12', name: 'Leg Day', exercises: ['4x10 Leg Press', '3x12 Lunges', '3x15 Calf Raises', '3x20 Leg Extensions'] },
+//   { day: 'Fri', dateDigit: '13', name: 'HIIT Workout', exercises: ['5 rounds of: 30s Burpees', '30s Mountain Climbers', '30s High Knees', '30s Rest'] },
+//   { day: 'Sat', dateDigit: '14', name: 'Core and Flexibility', exercises: ['3x20 Crunches', '3x30s Planks', '15 min Yoga Flow', '10 min Foam Rolling'] },
+//   { day: 'Sun', dateDigit: '15', name: 'Active Recovery', exercises: ['45 min Brisk Walk', '20 min Light Stretching', '15 min Meditation'] },
+// ];
 
 export default function JournalScreen() {
   const [workouts, setWorkouts] = useState([]);
   const [groupedWorkouts, setGroupedWorkouts] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [animatedValues, setAnimatedValues] = useState({});
+
 
   useEffect(() => {
     fetchWorkouts();
@@ -41,9 +45,62 @@ export default function JournalScreen() {
     setGroupedWorkouts(groupWorkoutsByMonth(workouts));
   }, [workouts]);
 
+  useEffect(() => {
+    const newAnimatedValues = {};
+    workouts.forEach(workout => {
+      newAnimatedValues[workout.id] = new Animated.Value(0);
+    });
+    setAnimatedValues(newAnimatedValues);
+  }, [workouts]);
+
+  const animateSlide = (id, toValue) => {
+    Animated.spring(animatedValues[id], {
+      toValue,
+      friction: 8,
+      tension: 50,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const setEditMode = (value) => {
+    setIsEditMode(value);
+    Object.keys(animatedValues).forEach(id => {
+      animateSlide(id, value ? 1 : 0);
+    });
+  };
+
   const openWorkoutDetails = (workout) => {
     setSelectedWorkout(workout);
     setModalVisible(true);
+  };
+
+  const deleteWorkout = async (workoutId) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        console.log('No token found');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/workouts/remove/${workoutId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete workout');
+      }
+
+      // Remove the workout from the local state
+      console.log("deleted the workout!");
+      setWorkouts(workouts.filter(workout => workout.id !== workoutId));
+      setEditMode(false);
+    } catch (error) {
+      console.error('Error deleting workout:', error);
+    }
   };
 
   const fetchWorkouts = async () => {
@@ -89,7 +146,7 @@ export default function JournalScreen() {
       acc[set.exercise_name].push(set);
       return acc;
     }, {});
-  
+
     return (
       <View style={styles.exerciseDetails}>
         {Object.entries(groupedSets).map(([exerciseName, sets], index) => (
@@ -116,7 +173,7 @@ export default function JournalScreen() {
         return acc;
       }, {});
     };
-  
+
     return (
       <Modal
         animationType="slide"
@@ -219,9 +276,13 @@ export default function JournalScreen() {
     <SafeAreaView style={styles.container}>
 
       <ThemedView style={styles.buttonContainer}>
-        <ThemedText style={styles.editButton} onPress={() => alert('Edit pressed')}>
-          Edit
+        <ThemedText
+          style={styles.editButton}
+          onPress={() => setEditMode(!isEditMode)}
+        >
+          {isEditMode ? 'Done' : 'Edit'}
         </ThemedText>
+
         <Ionicons
           name="add-circle-outline"
           size={24}
@@ -244,30 +305,67 @@ export default function JournalScreen() {
               <Text style={styles.workoutNumberSubText}>{monthWorkouts.length} workouts</Text>
             </View>
 
-            {monthWorkouts.map((workout, index) => (
-              <TouchableOpacity key={index} onPress={() => openWorkoutDetails(workout)}>
-                <View key={index} style={styles.workoutLog}>
-                  <DateWidget
-                    day={formatDay(workout.date_created)}
-                    dateDigit={formatDateDigit(workout.date_created)}
-                  />
-                  <View style={styles.workoutInfo}>
-                    <Text style={styles.workoutName}>{workout.name}</Text>
-                    {workout.exercises && workout.exercises.length > 0 ? (
-                      groupExercises(workout.exercises).map((exercise, exIndex) => (
-                        <Text key={exIndex} style={styles.exerciseName}>
-                          {`${exercise.sets}x ${exercise.name}`}
-                        </Text>
-                      ))
-                    ) : (
-                      <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
-                    )}
-                    <Text></Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
+            {monthWorkouts.map((workout, index) => {
+              const translateX = animatedValues[workout.id]?.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 40],
+              }) || new Animated.Value(0);
 
-            ))}
+              return (
+                <View key={workout.id} style={styles.workoutLogContainer}>
+                  <Animated.View style={[
+                    styles.deleteButtonContainer,
+                    {
+                      transform: [{
+                        translateX: translateX.interpolate({
+                          inputRange: [0, 40],
+                          outputRange: [-40, 0],
+                        }),
+                      }],
+                    },
+                  ]}>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => deleteWorkout(workout.id)}
+                    >
+                      <Ionicons name="remove-circle" size={24} color="red" />
+                    </TouchableOpacity>
+                  </Animated.View>
+                  <Animated.View style={[
+                    styles.workoutLog,
+                    {
+                      transform: [{ translateX }],
+                    },
+                  ]}>
+                    <TouchableOpacity
+                      onPress={() => !isEditMode && openWorkoutDetails(workout)}
+                      style={{ flexDirection: 'row', flex: 1 }}
+                    >
+                      <View style={styles.dateWidgetContainer}>
+                        <DateWidget
+                          day={formatDay(workout.date_created)}
+                          dateDigit={formatDateDigit(workout.date_created)}
+                        />
+                      </View>
+
+                      <View style={styles.workoutInfo}>
+                        <Text style={styles.workoutName}>{workout.name}</Text>
+                        {workout.exercises && workout.exercises.length > 0 ? (
+                          groupExercises(workout.exercises).map((exercise, exIndex) => (
+                            <Text key={exIndex} style={styles.exerciseName}>
+                              {`${exercise.sets}x ${exercise.name}`}
+                            </Text>
+                          ))
+                         // <View></View>
+                        ) : (
+                          <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  </Animated.View>
+                </View>
+              );
+            })}
           </View>
         ))}
 
@@ -331,30 +429,27 @@ const styles = StyleSheet.create({
   },
   workoutLog: {
     flexDirection: 'row',
-
-    marginVertical: 10,
-    marginHorizontal: 15,
+    alignItems: 'flex-start', // Align items to the top
     borderRadius: 30,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    padding: 16,
     backgroundColor: 'white',
-    overflow: 'hidden',
-    //flex: 1, //'white',//
+    flex: 1,
   },
   workoutInfo: {
-    marginLeft: 10,
+    flex: 1,
+    justifyContent: 'center',
   },
   workoutName: {
     fontWeight: 'bold',
     fontSize: 18,
-    paddingBottom: 0,
+    paddingBottom: 5,
   },
   exerciseName: {
-    paddingTop: 5,
+    paddingBottom: 10,
     fontSize: 15,
   },
   incompleteWorkout: {
-    paddingTop: 5,
+    paddingBottom: 15,
     fontSize: 15,
     fontStyle: 'italic',
     color: 'gray',
@@ -403,12 +498,42 @@ const styles = StyleSheet.create({
   exerciseTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    paddingBottom: 10,
     marginBottom: 5,
   },
   setDetails: {
     fontSize: 16,
     marginLeft: 10,
   },
-  
-  
+  workoutLogContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 10,
+    marginHorizontal: 15,
+    overflow: 'hidden',
+    //columnGap: 20,
+  },
+  deleteButtonContainer: {
+    position: 'absolute',
+    left: 0,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  deleteButton: {
+    padding: 10,
+  },
+  workoutLog: {
+    flexDirection: 'row',
+    borderRadius: 30,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    backgroundColor: 'white',
+    flex: 1,
+  },
+  dateWidgetContainer: {
+    // This will add space between the DateWidget and the workout info
+    marginRight: 30,
+  },
+
+
 });
