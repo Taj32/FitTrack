@@ -1,1 +1,93 @@
-GymApp that records and measure stats via phone app.
+
+# FitTrack
+
+FitTrack is a fitness app designed to help users record and track their progress on their fitness journey. The app introduces a unique social media interface that allows friends to encourage one another to follow their fitness goals via profiles and push notifications.
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Screenshots](#screenshots)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+- **Track Progress:** Log workouts, set goals, and monitor progress over time.
+- **Social Media Interface:** Connect with friends, share achievements, and motivate each other.
+- **Push Notifications:** Receive reminders and encouragement from friends.
+- **User Profiles:** Create and customize your profile, share your fitness journey.
+- **Analytics:** View detailed analytics of your fitness progress.
+
+## Installation
+
+To get started with FitTrack, follow these steps:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/fittrack.git
+   ```
+2. **Navigate to the project directory:**
+   ```bash
+   cd fittrack
+   ```
+3. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+4. **Run the app:**
+   ```bash
+   npm start
+   ```
+5. **Run on iOS:**
+   ```bash
+   npx react-native run-ios
+   ```
+6. **Run on Android:**
+   ```bash
+   npx react-native run-android
+   ```
+
+## Usage
+
+1. **Create an account or log in with your existing account.**
+2. **Set up your profile and connect with friends.**
+3. **Log your workouts and set your fitness goals.**
+4. **Monitor your progress and view analytics on your profile.**
+5. **Encourage friends by sending motivational messages via push notifications.**
+
+## Screenshots
+
+Include screenshots of your app here.
+
+![Home Screen](screenshots/home.png)
+![Profile Screen](screenshots/profile.png)
+![Analytics Screen](screenshots/analytics.png)
+
+## Contributing
+
+We welcome contributions to FitTrack! To contribute, please follow these steps:
+
+1. **Fork the repository.**
+2. **Create a new branch:**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Make your changes and commit them:**
+   ```bash
+   git commit -m 'Add some feature'
+   ```
+4. **Push to the branch:**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+5. **Submit a pull request.**
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+Feel free to customize this README as needed for your specific project.
