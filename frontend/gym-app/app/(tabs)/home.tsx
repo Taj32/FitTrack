@@ -172,15 +172,15 @@ export default function HomeScreen() {
     const items = [
         {
             id: 'item-1',
-            title: 'weight',
+            title: 'Average Weight',
             img: require('@/assets/images/running-man.png'),
-            color: 'blue',
+            color: '#177AD5',
         },
         {
             id: 'item-2',
-            title: 'steps',
+            title: 'Average steps',
             img: require('@/assets/images/heart.png'),
-            color: 'red',
+            color: '#FF6700',
         },
         // Add more items as needed
     ];
@@ -348,10 +348,11 @@ export default function HomeScreen() {
                     horizontal
                     onScroll={onScrollHandler}
                     data={items}
+                    
                     keyExtractor={(item) => item.id}
                     pagingEnabled={true}
                     renderItem={({ item, index }) => {
-                        return <CarouselItem item={item} index={index} scrollX={scrollX} />;
+                        return <CarouselItem info={item} index={index} scrollX={scrollX} />;
                     }}
                     //decelerationRate="fast"
                     showsHorizontalScrollIndicator={false}

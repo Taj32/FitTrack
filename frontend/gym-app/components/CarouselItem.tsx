@@ -8,7 +8,7 @@ import { ThemedText } from './ThemedText';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
 
 type Props = {
-  item: {
+  info: {
     id: string;
     title: string;
     img: any;
@@ -18,30 +18,31 @@ type Props = {
 };
 const { width } = Dimensions.get('window');
 
-const data = [{ value: 15, label: '6/9' },
-  { value: 10, label: '6/10' },
-  { value: 20, label: '6/11' },
-  { value: 25, label: '6/12' },
-  { value: 30, label: '6/13' },
-  { value: 70, label: '6/14' },
-  { value: 100, label: '6/15' },
+const data = [
+  { value: 175, label: 'January' },
+  { value: 165, label: 'Febuary' },
+  { value: 170, label: 'March' },
+  { value: 160, label: 'April' },
+  { value: 155, label: 'May' },
+  { value: 150, label: 'June' },
 
-  { value: 15, label: '6/16' },
-  { value: 10, label: '6/17' },
-  { value: 20, label: '6/18' },
-  { value: 25, label: '6/19' },
-  { value: 30, label: '6/20' },
-  { value: 70, label: '6/21' },
-  { value: 100, label: '6/22' },
+  { value: 155, label: 'July' },
+  //{ value: 15, label: '6/9' },
+  // { value: 10, label: '6/17' },
+  // { value: 20, label: '6/18' },
+  // { value: 25, label: '6/19' },
+  // { value: 30, label: '6/20' },
+  // { value: 70, label: '6/21' },
+  // { value: 100, label: '6/22' },
 
-  { value: 15, label: '6/23' },
-  { value: 10, label: '6/24' },
-  { value: 20, label: '6/25' },
-  { value: 25, label: '6/26' },
-  { value: 30, label: '6/27' },
-  { value: 70, label: '6/28' },
-  { value: 100, label: '6/29' },
-  { value: 100, label: '6/30' },
+  // { value: 15, label: '6/23' },
+  // { value: 10, label: '6/24' },
+  // { value: 20, label: '6/25' },
+  // { value: 25, label: '6/26' },
+  // { value: 30, label: '6/27' },
+  // { value: 70, label: '6/28' },
+  // { value: 100, label: '6/29' },
+  // { value: 100, label: '6/30' },
 
   ];
 
@@ -49,7 +50,7 @@ const data = [{ value: 15, label: '6/9' },
 
 
 
-const CarouselItem = ({ item, index, scrollX }: Props) => {
+const CarouselItem = ({ info, index, scrollX }: Props) => {
   const rnStyle = useAnimatedStyle(() => {
     return {
       //get the previous and next item on the view of the active item, only a little bit
@@ -79,7 +80,7 @@ const CarouselItem = ({ item, index, scrollX }: Props) => {
         { width, height: 300, justifyContent: 'left', alignItems: 'center' },
         rnStyle,
       ]}
-      key={item.id}
+      key={info.id}
     >
       {/* <Image
         source={item.img}
@@ -91,14 +92,14 @@ const CarouselItem = ({ item, index, scrollX }: Props) => {
       /> */}
 
       <View style={[styles.scrollChart, { marginRight: 0 }]}>
-        <ThemedText type="subtitle">{item.title}</ThemedText>
+        <ThemedText type="subtitle">{info.title}</ThemedText>
         <BarChart
           data={data}
           isAnimated
           height={150}
           showTextOnFocus
           animateOnDataChange
-          color={item.color}
+          frontColor={info.color}
         />
         
         <View style={{ flexDirection: 'row', marginLeft: 30, marginTop: 5, }}>
@@ -109,7 +110,7 @@ const CarouselItem = ({ item, index, scrollX }: Props) => {
                 style={{
                   padding: 6,
                   margin: 4,
-                  backgroundColor: '#98FB98',
+                  backgroundColor: info.color,
                   borderRadius: 8,
                 }}
                 onPress={() => showOrHidePointer(index)}>

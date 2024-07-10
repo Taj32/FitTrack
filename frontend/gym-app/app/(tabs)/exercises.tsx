@@ -181,12 +181,12 @@ const App = () => {
           </View>
 
           <View style={styles.recordContainer}>
-            <Text style={styles.recordText}>Weight</Text>
-            <Text>{stats.weight}</Text>
+            <Text style={styles.recordText}>Average weight</Text>
+            <Text>{(stats.weight - 40)}</Text>
           </View>
 
           <View style={styles.recordContainer}>
-            <Text style={styles.recordText}>Volume</Text>
+            <Text style={styles.recordText}>Total Volume moved</Text>
             <Text>{stats.volume}</Text>
           </View>
 

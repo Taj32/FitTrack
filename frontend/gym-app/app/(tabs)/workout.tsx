@@ -129,29 +129,42 @@ export default function WorkoutScreen() {
 
 
 
-  const addWorkout = async (workout: { name: string; exercises: { name: string; sets: number }[] }) => {
+  const addWorkout = async (workoutName: string, exercises: { name: string; sets: number }[]) => {
     try {
+      const workoutData = {
+        name: workoutName,
+        exercises: exercises
+      };
+
+      console.log('Sending workout data:', JSON.stringify(workoutData));
+      console.log('User token:', userToken);
+
+      if (!userToken) {
+        throw new Error('User token is missing');
+      }
+
       const response = await fetch(`${API_URL}/workouts/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${userToken}`
         },
-        body: JSON.stringify(workout)
+        body: JSON.stringify(workoutData)
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      await fetchWorkouts();
+
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
       }
-      //console.log(response.id);
 
-      //const data = await response.json();
-      //console.log('Workout structure:', JSON.stringify(data, null, 2));
-      //const data = await response.json();
-
-      //console.log('Fetched data1:', JSON.stringify(data, null, 2));
-
-      // console.log(data.id);
-      return await response.json();
+      return JSON.parse(responseText);
     } catch (error) {
       console.error('Error adding workout:', error);
       throw error;
@@ -256,7 +269,7 @@ export default function WorkoutScreen() {
       alert('Please fill in all weight and rep fields before saving.');
       return;
     }
-  
+
     const workoutCompletionData: WorkoutCompletionData = {
       exerciseData: [],
     };
@@ -273,13 +286,13 @@ export default function WorkoutScreen() {
       const workoutCompletionData: WorkoutCompletionData = {
         exerciseData: [],
       };
-    
+
       selectedWorkout.exercises.forEach((exercise) => {
         const exerciseInfo: ExerciseData = {
           weights: [],
           reps: [],
         };
-    
+
         [...Array(exercise.set)].forEach((_, setIndex) => {
           const setData = exerciseData[exercise.id]?.[setIndex];
           if (setData) {
@@ -287,7 +300,7 @@ export default function WorkoutScreen() {
             exerciseInfo.reps.push(Number(setData.reps) || 0);
           }
         });
-    
+
         workoutCompletionData.exerciseData.push(exerciseInfo);
       });
 
@@ -392,14 +405,14 @@ export default function WorkoutScreen() {
 
   //Unique worko
 
-  // function areAllInputsFilled(): boolean {
-  //   return selectedWorkout.exercises.every((exercise) => {
-  //     return [...Array(exercise.set)].every((_, setIndex) => {
-  //       const setData = exerciseData[exercise.id]?.[setIndex];
-  //       return setData && setData.weight !== '' && setData.reps !== '';
-  //     });
-  //   });
-  // }
+  function areAllInputsFilled(): boolean {
+    return selectedWorkout.exercises.every((exercise) => {
+      return [...Array(exercise.set)].every((_, setIndex) => {
+        const setData = exerciseData[exercise.id]?.[setIndex];
+        return setData && setData.weight !== '' && setData.reps !== '';
+      });
+    });
+  }
 
   const renderExerciseItem = ({ item, index }: { item: Exercise; index: number }) => (
     <ThemedView style={styles.exerciseContainer}>
@@ -566,45 +579,46 @@ export default function WorkoutScreen() {
             setModalVisible(!modalVisible);
           }}
         >
-          <ThemedView style={styles.modalContainer}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <ThemedView style={[styles.modalContainer, { flex: 1 }]}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={handleCloseModal} style={styles.backButton}>
+                  <Ionicons name="arrow-back" size={24} color="#007AFF" />
+                </TouchableOpacity>
+                <ThemedText type="title" style={styles.modalTitle}>
+                  {selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}
+                </ThemedText>
+              </View>
 
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={handleCloseModal} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color="#007AFF" />
-              </TouchableOpacity>
-              <ThemedText type="title" style={styles.modalTitle}>
-                {selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}
-              </ThemedText>
-            </View>
-
-
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              <Text style={styles.modalTitle}>{selectedWorkout.name}</Text>
-              {selectedWorkout.exercises.map(exercise => (
-                <View key={exercise.id} style={styles.exerciseContainer}>
-                  <Text style={styles.exerciseName}>{exercise.name}</Text>
-                  {[...Array(exercise.set)].map((_, setIndex) => (
-                    <View key={setIndex} style={styles.setContainer}>
-                      <Text>Set {setIndex + 1}: </Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="weight"
-                        //keyboardType="numeric"
-                        onChangeText={(value) => handleInputChange(exercise.id, setIndex, 'weight', value)}
-                      />
-                      <TextInput
-                        style={styles.input}
-                        placeholder="reps"
-                        //keyboardType="numeric"
-                        onChangeText={(value) => handleInputChange(exercise.id, setIndex, 'reps', value)}
-                      />
-                    </View>
-                  ))}
-                </View>
-              ))}
-              <Button title="Save" onPress={handleSave} disabled={!areAllInputsFilled} />
-            </ScrollView>
-          </ThemedView>
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={styles.modalContent}
+              >
+                <Text style={styles.modalTitle}>{selectedWorkout.name}</Text>
+                {selectedWorkout.exercises.map((exercise, exerciseIndex) => (
+                  <View key={exercise.id || exerciseIndex} style={styles.exerciseContainer}>
+                    <Text style={styles.exerciseName}>{exercise.name}</Text>
+                    {[...Array(exercise.set)].map((_, setIndex) => (
+                      <View key={`${exercise.id || exerciseIndex}-${setIndex}`} style={styles.setContainer}>
+                        <Text>Set {setIndex + 1}: </Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="weight"
+                          onChangeText={(value) => handleInputChange(exercise.id || exerciseIndex, setIndex, 'weight', value)}
+                        />
+                        <TextInput
+                          style={styles.input}
+                          placeholder="reps"
+                          onChangeText={(value) => handleInputChange(exercise.id || exerciseIndex, setIndex, 'reps', value)}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                ))}
+                <Button title="Save" onPress={handleSave} disabled={!areAllInputsFilled} />
+              </ScrollView>
+            </ThemedView>
+          </SafeAreaView>
         </Modal>
       )}
 
@@ -752,5 +766,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+
+
+  
 
 });
