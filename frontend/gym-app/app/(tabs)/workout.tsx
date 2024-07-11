@@ -128,6 +128,43 @@ export default function WorkoutScreen() {
   }, [userToken]);
 
 
+  const addWorkoutTemp = async (payload: { name: string; exercises: { name: string; sets: number; }[]; }) => {
+    try {
+      console.log('Sending workout data:', JSON.stringify(payload));
+      console.log('User token:', userToken);
+
+      if (!userToken) {
+        throw new Error('User token is missing');
+      }
+
+      const response = await fetch(`${API_URL}/workouts/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      await fetchWorkouts();
+
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+      }
+
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.error('Error adding workout:', error);
+      throw error;
+    }
+  };
+
 
   const addWorkout = async (workoutName: string, exercises: { name: string; sets: number }[]) => {
     try {
@@ -180,6 +217,10 @@ export default function WorkoutScreen() {
 
   async function completeWorkout(workoutId: string, data: WorkoutCompletionData) {
     try {
+
+      console.log("id:", workoutId);
+      console.log("data:", JSON.stringify(data));
+
       const response = await fetch(`${API_URL}/workouts/complete/${workoutId}`, {
         method: 'POST',
         headers: {
@@ -236,8 +277,6 @@ export default function WorkoutScreen() {
       id: Date.now(), // Using current timestamp as a unique ID
       name: `${workout.name}`,
       exercises: workout.exercises.map(exercise => ({
-        //id: exercise.id,
-        //weight: "",
         name: exercise.name,
         set: exercise.sets
       }))
@@ -263,62 +302,54 @@ export default function WorkoutScreen() {
     });
   };
 
-  const handleSave = async () => {
-
-    if (!areAllInputsFilled()) {
-      alert('Please fill in all weight and rep fields before saving.');
-      return;
-    }
-
-    const workoutCompletionData: WorkoutCompletionData = {
-      exerciseData: [],
+  const transformExerciseData = (exerciseData) => {
+    return {
+      exerciseData: Object.values(exerciseData).map(exercise => {
+        const weights = [];
+        const reps = [];
+        
+        Object.values(exercise).forEach(set => {
+          weights.push(Number(set.weight));
+          reps.push(Number(set.reps));
+        });
+  
+        return { weights, reps };
+      })
     };
+  };
+  
 
+  const handleSave = async () => {
+    // if (!areAllInputsFilled()) {
+    //   alert('Please fill in all weight and rep fields before saving.');
+    //   return;
+    // }
+  
     if (selectedWorkout) {
       const workoutPayload = {
         name: selectedWorkout.name,
         exercises: selectedWorkout.exercises.map(exercise => ({
           name: exercise.name,
-          sets: exercise.set
-        }))
+          sets: exercise.set,
+        })),
       };
-
-      const workoutCompletionData: WorkoutCompletionData = {
-        exerciseData: [],
-      };
-
-      selectedWorkout.exercises.forEach((exercise) => {
-        const exerciseInfo: ExerciseData = {
-          weights: [],
-          reps: [],
-        };
-
-        [...Array(exercise.set)].forEach((_, setIndex) => {
-          const setData = exerciseData[exercise.id]?.[setIndex];
-          if (setData) {
-            exerciseInfo.weights.push(Number(setData.weight) || 0);
-            exerciseInfo.reps.push(Number(setData.reps) || 0);
-          }
-        });
-
-        workoutCompletionData.exerciseData.push(exerciseInfo);
-      });
-
+  
+      const workoutCompletionData = transformExerciseData(exerciseData);
+  
+      console.log('workoutCompletionData before API call:', workoutCompletionData);
+  
       try {
-        const response = await addWorkout(workoutPayload);
-        //console.log(response.exercises.id);
+        const response = await addWorkoutTemp(workoutPayload);
         console.log('Workout added successfully.', response);
-        console.log(response.workout.id);
         const workoutId = response.workout.id;
-
-        console.log("popopopopopopopopopopop");
+  
         console.log("workoutCompletionData", workoutCompletionData);
         const completionResult = await completeWorkout(workoutId, workoutCompletionData);
-        console.log("workout completed successfully");
+        console.log("Workout completed successfully");
       } catch (error) {
         console.error('Error adding workout:', error);
       }
-
+  
       console.log('Workout Name:', selectedWorkout.name);
       selectedWorkout.exercises.forEach(exercise => {
         console.log('Exercise:', exercise.name);
@@ -330,6 +361,7 @@ export default function WorkoutScreen() {
     }
     setModalVisible(false); // Close the modal
   };
+  
 
 
 
@@ -342,46 +374,6 @@ export default function WorkoutScreen() {
     })));
   };
 
-  const handleSaveWorkout = async () => {
-    if (!selectedWorkout) {
-      console.log('No workout selected');
-      return;
-    }
-
-    // Prepare exercises data for adding workout
-    const exercisesForAdd = selectedWorkout.exercises.map(exercise => ({
-      name: exercise.name,
-      sets: exercise.set
-    }));
-
-    // Add the workout first
-    const workoutId = await addWorkout(selectedWorkout.name, exercisesForAdd);
-    if (!workoutId) {
-      console.error('Failed to create workout');
-      return;
-    }
-
-    // Prepare exercise data for completing workout
-    const exerciseDataForComplete = selectedWorkout.exercises.map((exercise, index) => {
-      const weights = [];
-      const reps = [];
-      for (let i = 0; i < exercise.set; i++) {
-        const log = exerciseData[index].logs[i];
-        if (log.weight && log.reps) {
-          weights.push(parseFloat(log.weight));
-          reps.push(parseInt(log.reps));
-        }
-      }
-      return { weights, reps };
-    });
-
-    // Complete the workout with all exercise data
-    await completeWorkout(workoutId, exerciseDataForComplete);
-
-    // ... (rest of the function for saving to file system)
-
-    setShowModal(false);
-  };
 
   const handleExerciseDataChange = (exerciseIndex: number, setIndex: number, field: 'reps' | 'weight', value: string) => {
     setExerciseData(prevData => {
@@ -594,34 +586,49 @@ export default function WorkoutScreen() {
                 style={{ flex: 1 }}
                 contentContainerStyle={styles.modalContent}
               >
-                <Text style={styles.modalTitle}>{selectedWorkout.name}</Text>
-                {selectedWorkout.exercises.map((exercise, exerciseIndex) => (
-                  <View key={exercise.id || exerciseIndex} style={styles.exerciseContainer}>
-                    <Text style={styles.exerciseName}>{exercise.name}</Text>
-                    {[...Array(exercise.set)].map((_, setIndex) => (
-                      <View key={`${exercise.id || exerciseIndex}-${setIndex}`} style={styles.setContainer}>
-                        <Text>Set {setIndex + 1}: </Text>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="weight"
-                          onChangeText={(value) => handleInputChange(exercise.id || exerciseIndex, setIndex, 'weight', value)}
-                        />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="reps"
-                          onChangeText={(value) => handleInputChange(exercise.id || exerciseIndex, setIndex, 'reps', value)}
-                        />
+                {(() => {
+                  let cumulativeSetIndex = 0;
+                  let prevExerciseName = '';
+
+                  return selectedWorkout.exercises.map((exercise, exerciseIndex) => {
+                    if (exercise.name !== prevExerciseName) {
+                      cumulativeSetIndex = 0;
+                      prevExerciseName = exercise.name;
+                    }
+
+                    return (
+                      <View key={exercise.id || exerciseIndex} style={styles.exerciseContainer}>
+                        <Text style={styles.exerciseName}>{exercise.name}</Text>
+                        {[...Array(exercise.set)].map((_, localSetIndex) => {
+                          cumulativeSetIndex++;
+                          return (
+                            <View key={`${exercise.id || exerciseIndex}-${localSetIndex}`} style={styles.setContainer}>
+                              <Text>Set {cumulativeSetIndex}: </Text>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="weight"
+                                onChangeText={(value) => handleInputChange(exercise.id || exerciseIndex, localSetIndex, 'weight', value)}
+                              />
+                              <TextInput
+                                style={styles.input}
+                                placeholder="reps"
+                                onChangeText={(value) => handleInputChange(exercise.id || exerciseIndex, localSetIndex, 'reps', value)}
+                              />
+                            </View>
+                          );
+                        })}
                       </View>
-                    ))}
-                  </View>
-                ))}
-                <Button title="Save" onPress={handleSave} disabled={!areAllInputsFilled} />
+                    );
+                  });
+                })()}
+                {/* <Button title="Save" onPress={handleSave} disabled={!areAllInputsFilled} /> */}
+
               </ScrollView>
+              <Button title="Save" onPress={handleSave} />
             </ThemedView>
           </SafeAreaView>
         </Modal>
       )}
-
     </SafeAreaView>
 
 
@@ -660,7 +667,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     //flex: 1,
-    marginTop: 128,
+    marginTop: 32,
     padding: 16,
     marginHorizontal: 24,
     backgroundColor: '#f2f1f6',
@@ -757,8 +764,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
-    width: '100%',
-    maxHeight: '100%',
+    paddingBottom: 0,
+    //flexGrow: 1,
+    //width: '100%',
+    //maxHeight: '100%',
   },
   exerciseName: {
     fontSize: 18,
@@ -768,6 +777,8 @@ const styles = StyleSheet.create({
 
 
 
-  
+
+
+
 
 });
