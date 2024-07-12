@@ -44,16 +44,28 @@ export default function HomeScreen() {
     const [recentWorkouts, setRecentWorkouts] = useState([]);
 
 
+    const [workoutDates, setWorkoutDates] = useState([]);
+    //const [streaks, set] = useState([][]);
+    const [groupedStreaks, setGroupedStreaks] = useState<string[][]>([]);
 
 
+
+    //var groupedStreaks = null;
+    
 
 
     useEffect(() => {
         fetchUserName();
-        //fetchExerciseData('Bench Press').then(setBenchPressData);
         fetchRecentWorkouts();
+        fetchWorkouts();
+
+        //set
+        const grouped = groupDatesIntoStreaks(workoutDates);
+        setGroupedStreaks(grouped);
 
     }, []);
+
+
 
     const fetchExerciseData = async (exerciseName: any) => {
         try {
@@ -87,6 +99,44 @@ export default function HomeScreen() {
             console.error('Error fetching user name:', error);
         } finally {
             //setIsLoading(false);
+        }
+    };
+
+    const fetchWorkouts = async () => {
+
+        //console.log(userToken);
+        try {
+            const userToken = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_URL}/workouts/user-workouts`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}`
+                }
+                //body: JSON.stringify({ exerciseData }),
+            });
+
+            const data = await response.json();
+
+            console.log('Fetched data:', JSON.stringify(data, null, 2));
+
+            // Extract workout dates
+            const workoutDates = data.map(workout => workout.date_created);
+
+            // Remove duplicates and sort dates
+            const uniqueSortedDates = [...new Set(workoutDates)].sort((a, b) => new Date(b) - new Date(a));
+
+            console.log('Workout dates:', uniqueSortedDates);
+            setWorkoutDates(uniqueSortedDates);
+
+            // Filter workouts to ensure unique names
+            //   const uniqueWorkouts = data.filter(
+            //     (workout, index, self) => index === self.findIndex((w) => w.name === workout.name)
+            //   );
+
+            //   setWorkouts(uniqueWorkouts);
+        } catch (error) {
+            console.error('Error fetching workouts:', error);
         }
     };
 
@@ -219,7 +269,7 @@ export default function HomeScreen() {
         console.log(transformedData);
         // Remove the last element
         //const dataWithoutLast = transformedData.slice(0, -1);
-       // console.log('Transformed data for LineChart (without last):', dataWithoutLast);
+        // console.log('Transformed data for LineChart (without last):', dataWithoutLast);
 
 
         const dataTemp = [
@@ -257,7 +307,7 @@ export default function HomeScreen() {
                                 borderRadius: 8,
                             }}
                             onPress={() => showOrHidePointer(index)}>
-                            {/* /* , workout.exercise_name */ }
+                            {/* /* , workout.exercise_name */}
                             <Text>{item}</Text>
                         </TouchableOpacity>
                     ))}
@@ -268,6 +318,30 @@ export default function HomeScreen() {
         );
     };
 
+    const formatStreaks = (streaks: string[][]) => {
+        const markedDates = {};
+      
+        streaks.forEach(streak => {
+          if (streak.length === 1) {
+            // Singleton array
+            markedDates[streak[0]] = { marked: true, dotColor: '#50cebb' };
+          } else {
+            // Non-singleton array
+            streak.forEach((date, index) => {
+              if (index === 0) {
+                markedDates[date] = { startingDay: true, color: '#33B3A6', dotColor: '#50cebb' };
+              } else if (index === streak.length - 1) {
+                markedDates[date] = { endingDay: true, color: '#33B3A6' };
+              } else {
+                markedDates[date] = { selected: true, color: '#39C9BB' };
+              }
+            });
+          }
+        });
+      
+        return markedDates;
+      };
+
     if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -275,6 +349,36 @@ export default function HomeScreen() {
             </View>
         );
     }
+
+    function groupDatesIntoStreaks(dates: string[]): string[][] {
+        if (dates.length === 0) return [];
+      
+        const sortedDates = [...dates].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        const streaks: string[][] = [];
+        let currentStreak: string[] = [sortedDates[0]];
+      
+        for (let i = 1; i < sortedDates.length; i++) {
+          const currentDate = new Date(sortedDates[i]);
+          const previousDate = new Date(sortedDates[i - 1]);
+          
+          // Check if the current date is one day after the previous date
+          if (currentDate.getTime() - previousDate.getTime() === 86400000) {
+            currentStreak.push(sortedDates[i]);
+          } else {
+            streaks.push(currentStreak);
+            currentStreak = [sortedDates[i]];
+          }
+        }
+      
+        streaks.push(currentStreak);
+      
+        return streaks;
+      }
+
+
+      const markedDates = formatStreaks(groupedStreaks);
+      console.log("markedDates: ", markedDates);
+
 
     return (
 
@@ -296,7 +400,6 @@ export default function HomeScreen() {
 
             <Calendar
                 style={{
-                    //borderWidth: 1,
                     borderColor: 'gray',
                     height: 380,
                     borderRadius: 30,
@@ -306,13 +409,7 @@ export default function HomeScreen() {
                 }}
 
                 markingType={'period'}
-                markedDates={{
-                    //'2024-06-10': { textColor: 'green' },
-                    '2024-06-11': { startingDay: true, color: '#33B3A6', dotColor: '#50cebb' },
-                    '2024-06-12': { selected: true, color: '#39C9BB', dotColor: '#50cebb' },
-                    '2024-06-13': { selected: true, color: '#39C9BB' },
-                    '2024-06-14': { disabled: true, color: '#33B3A6', endingDay: true }
-                }}
+                markedDates={markedDates}
             >
 
             </Calendar>
@@ -348,7 +445,7 @@ export default function HomeScreen() {
                     horizontal
                     onScroll={onScrollHandler}
                     data={items}
-                    
+
                     keyExtractor={(item) => item.id}
                     pagingEnabled={true}
                     renderItem={({ item, index }) => {
@@ -435,7 +532,5 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
 });
-function setIsLoading(arg0: boolean) {
-    throw new Error('Function not implemented.');
-}
+
 
