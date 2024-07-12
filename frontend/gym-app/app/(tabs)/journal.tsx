@@ -12,6 +12,8 @@ import { format, parseISO, startOfMonth, isSameMonth } from 'date-fns';
 
 import { useState, useEffect, useRef } from 'react';
 import { Animated, } from 'react-native';
+import { router } from 'expo-router';
+
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -288,7 +290,7 @@ export default function JournalScreen() {
           size={24}
           color='#007AFF'
           style={{ marginRight: 16 }}
-          onPress={() => alert('"+" pressed')}
+          onPress={() => router.replace('/workout')}
         />
       </ThemedView>
 
