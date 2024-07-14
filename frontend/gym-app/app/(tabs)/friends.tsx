@@ -26,13 +26,6 @@ export default function FriendScreen() {
             <ThemedView style={styles.titleContainer}>
                 <ThemedText type="title" >Friends</ThemedText>
             </ThemedView>
-            {/* <Text>Hello</Text> */}
-
-            {/* <SvgUri
-                width="100%"
-                height="100%"
-                uri='@/assets/images/training.svg'
-            /> */}
 
             <View style={styles.defaultContainer}>
                 <Image
@@ -41,10 +34,6 @@ export default function FriendScreen() {
                 />
                 <Text style={styles.defaultText}>Fitness is more fun with friends! Use the add button to cheer each other on and crush your goals together.</Text>
             </View>
-
-
-
-
 
         </SafeAreaView>
     )
@@ -96,9 +85,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: 'gray',
         fontSize: 17,
-        //fontWeight: 'condensed',
-        margin: 0,
-        
+        margin: 0,        
         paddingHorizontal: 30,
     }
 });

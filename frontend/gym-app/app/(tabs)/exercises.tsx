@@ -3,7 +3,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useState } from "react";
 import { SafeAreaView, View, Text, TextInput, FlatList, StyleSheet, Button, Alert, Dimensions, Image, TouchableOpacity, Modal } from 'react-native';
 import { LineChart } from "react-native-gifted-charts";
-import { red } from "react-native-reanimated/lib/typescript/reanimated2/Colors";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -11,7 +10,6 @@ import {
 
 const { width, height } = Dimensions.get('window');
 const API_URL = 'http://192.168.1.205:5000';
-
 
 const App = () => {
 
@@ -166,14 +164,8 @@ const App = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        {/* <View style={styles.centeredView}> */}
         <View style={styles.modalContainer}>
-          {/* <Text style={styles.modalTitle}>{selectedExercise?.title}</Text> */}
           <ThemedText type="title">{selectedExercise?.title}</ThemedText>
-
-
-          {/* <ThemedText type="subtitle" style="subText">Personal Records</ThemedText> */}
-
           <Text style={styles.subtext}>Personal Records</Text>
           <View style={styles.recordContainer}>
             <Text style={styles.recordText}>PR</Text>
@@ -192,18 +184,6 @@ const App = () => {
 
 
           <View style={styles.chart}>
-            {/* <ThemedText type="subtitle">{workout.exercise_name}</ThemedText> */}
-            {/* <LineChart
-                    data={transformedData}
-                    curved
-                    isAnimated
-                    height={150}
-                    focusEnabled
-                    showTextOnFocus
-                    //animateOnDataChange //--> Why was this causing the error?
-                    color={workout.color}
-                /> */}
-
 
             <LineChart
               data={exerciseData}
@@ -213,12 +193,10 @@ const App = () => {
               isAnimated
               color={'#C8A2C8'}
 
-            // style={styles.chart}
             />
           </View>
           <Button title="Close" onPress={() => setModalVisible(false)} />
         </View>
-        {/* </View> */}
       </Modal>
     );
   }
@@ -228,13 +206,6 @@ const App = () => {
 
       <View style={styles.searchBarContainer}>
         <View style={styles.searchRow}>
-          {/* <View style={styles.buttonContainer}>
-            <Button
-              onPress={() => Alert.alert('Simple Button pressed')}
-              title="New"
-              accessibilityLabel="Learn more about this purple button"
-            />
-          </View> */}
           <Text style={styles.title}>Exercises</Text>
         </View>
 
@@ -310,9 +281,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: (width / 4),
     alignItems: 'center',
-    //alignItems: 'baseline',
-    //alignContent: 'space-evenly',
-    //alignItems: 'flex-start',
+
   },
   newButton: {
     color: 'red',
@@ -330,9 +299,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: 'hidden',
-    //paddingVertical: 200,
     backgroundColor: "blue",
-    //paddingHorizontal: 0,
     marginTop: 25
   },
   modalContainer: {
@@ -342,19 +309,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     backgroundColor: '#f2f1f6',
     borderRadius: 30,
-    //margin: 70,
-    // backgroundColor: '#f2f1f6', //"white",
-    // borderRadius: 20,
-    // padding: 10,
-    // alignItems: "center",
-    // shadowColor: "#000",
-    // shadowOffset: {
-    //   width: 0,
-    //   height: 2
-    // },
-    // shadowOpacity: 0.25,
-    // shadowRadius: 4,
-    // elevation: 5
   },
   modalTitle: {
     marginBottom: 15,
@@ -363,13 +317,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold"
   },
   chart: {
-    //rowGap: 10,
     borderRadius: 30,
     padding: 16,
-    //height: 300,
     backgroundColor: 'white',
     overflow: 'hidden',
-    //flex: 1, //'white',//
   },
   subtext: {
     fontSize: 16,
@@ -378,7 +329,6 @@ const styles = StyleSheet.create({
   },
   recordContainer: {
     flexDirection: 'row', alignItems: 'center',
-    //paddingHorizontal: 16,
     paddingVertical: 15,
   },
   recordText: {
@@ -387,7 +337,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: 'black',
   }
-
 });
 
 export default App;

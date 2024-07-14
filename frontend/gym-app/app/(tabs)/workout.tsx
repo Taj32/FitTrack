@@ -7,12 +7,7 @@ import React, { SetStateAction, useEffect, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-
-
-
 const API_URL = 'http://192.168.1.205:5000';
-
 
 export default function WorkoutScreen() {
 
@@ -37,7 +32,6 @@ export default function WorkoutScreen() {
     set: number;
   }
 
-  // const [workouts, setWorkouts] = useState([
   //   {
   //     id: 1, name: 'Full Body Workout', exercises: [
   //       { id: 1, name: 'Bench Press', set: 1 },
@@ -84,19 +78,12 @@ export default function WorkoutScreen() {
 
   const [userToken, setUserToken] = useState<string | null>(null);
 
-
-  //const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [showModal, setShowModal] = useState(false);
-  // const [exerciseData, setExerciseData] = useState<ExerciseData[]>([]);
   const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false);
-
-
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [exerciseData, setExerciseData] = useState<{ [exerciseId: number]: { [setIndex: number]: { weight: string, reps: string } } }>({});
-
-
 
 
   const handleAddWorkoutPress = () => {
@@ -318,7 +305,6 @@ export default function WorkoutScreen() {
     };
   };
   
-
   const handleSave = async () => {
     // if (!areAllInputsFilled()) {
     //   alert('Please fill in all weight and rep fields before saving.');
@@ -362,80 +348,6 @@ export default function WorkoutScreen() {
     setModalVisible(false); // Close the modal
   };
   
-
-
-
-
-  const handleWorkoutSelect = (workout: Workout) => {
-    setSelectedWorkout(workout);
-    setShowModal(true);
-    setExerciseData(workout.exercises.map(exercise => ({
-      logs: Array(exercise.set).fill({ reps: '', weight: '' })
-    })));
-  };
-
-
-  const handleExerciseDataChange = (exerciseIndex: number, setIndex: number, field: 'reps' | 'weight', value: string) => {
-    setExerciseData(prevData => {
-      const newData = [...prevData];
-      newData[exerciseIndex].logs[setIndex] = {
-        ...newData[exerciseIndex].logs[setIndex],
-        [field]: value
-      };
-      return newData;
-    });
-  };
-
-  const renderWorkoutItem = ({ item }: { item: Workout }) => (
-    <TouchableOpacity onPress={() => handleWorkoutSelect(item)}>
-      <View style={styles.workoutContainer}>
-        <Text style={styles.workoutOptions}>{item.name}</Text>
-        <Ionicons name="caret-forward" size={16} color="gray" />
-      </View>
-    </TouchableOpacity>
-  );
-
-  //Unique worko
-
-  function areAllInputsFilled(): boolean {
-    return selectedWorkout.exercises.every((exercise) => {
-      return [...Array(exercise.set)].every((_, setIndex) => {
-        const setData = exerciseData[exercise.id]?.[setIndex];
-        return setData && setData.weight !== '' && setData.reps !== '';
-      });
-    });
-  }
-
-  const renderExerciseItem = ({ item, index }: { item: Exercise; index: number }) => (
-    <ThemedView style={styles.exerciseContainer}>
-      <ThemedText>{item.name}</ThemedText>
-      <View style={styles.row}>
-        <Text style={styles.cell}>Set</Text>
-        <Text style={styles.cell}>Lbs</Text>
-        <Text style={styles.cell}>Reps</Text>
-      </View>
-
-      {Array.from({ length: item.set }).map((_, setIndex) => (
-        <View key={setIndex} style={styles.row}>
-          <Text style={styles.cell}>{setIndex + 1}</Text>
-          <TextInput
-            placeholder="Reps"
-            style={styles.cell}
-            value={exerciseData[index].logs[setIndex].reps}
-            onChangeText={(text) => handleExerciseDataChange(index, setIndex, 'reps', text)}
-          />
-          <TextInput
-            placeholder="Weight"
-            style={styles.cell}
-            value={exerciseData[index].logs[setIndex].weight}
-            onChangeText={(text) => handleExerciseDataChange(index, setIndex, 'weight', text)}
-          />
-        </View>
-      ))}
-    </ThemedView>
-  );
-
-
   const AddWorkoutModal = ({ visible, onClose, onAdd }) => {
     const [workoutName, setWorkoutName] = useState('');
     const [exercises, setExercises] = useState([{ name: '', sets: 1 }]);
@@ -532,17 +444,6 @@ export default function WorkoutScreen() {
         <Ionicons name="fitness" size={50} color="black" />
       </ThemedView>
 
-
-      {/* static workouts
-      <FlatList
-        data={workouts}
-        renderItem={renderWorkoutItem}
-        keyExtractor={(item) => item.id.toString()}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListHeaderComponent={() => <View style={styles.separator} />}
-        ListFooterComponent={() => <View style={styles.separator} />}
-      /> */}
-
       {/* Dynamic cases */}
       <FlatList
         data={workouts}
@@ -636,11 +537,8 @@ export default function WorkoutScreen() {
 }
 
 
-
 const styles = StyleSheet.create({
-  // titleText: {
-  //   backgroundColor: 'red',
-  // },
+
   container: {
     backgroundColor: '#f2f1f6',
     flex: 1,
@@ -661,21 +559,15 @@ const styles = StyleSheet.create({
   },
   exerciseContainer: {
     marginVertical: 10,
-    //flexDirection: 'row',
-    //alignItems: 'center',
-    //gap: 0,
   },
   modalContainer: {
-    //flex: 1,
     marginTop: 32,
     padding: 16,
     marginHorizontal: 24,
     backgroundColor: '#f2f1f6',
     borderRadius: 30,
-    //backgroundColor: 'red',
   },
   saveButton: {
-    //backgroundColor: 'green',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -765,20 +657,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     paddingBottom: 0,
-    //flexGrow: 1,
-    //width: '100%',
-    //maxHeight: '100%',
+
   },
   exerciseName: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
   },
-
-
-
-
-
-
-
 });

@@ -1,15 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { DateWidget } from '@/components/DateWidget';
-import { NavigationContainer } from '@react-navigation/native';
 import { format, parseISO, startOfMonth, isSameMonth } from 'date-fns';
-
 import { useState, useEffect, useRef } from 'react';
 import { Animated, } from 'react-native';
 import { router } from 'expo-router';
@@ -19,15 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = 'http://192.168.1.205:5000';
 
-// const workoutLogs = [
-//   { day: 'Mon', dateDigit: '9', name: 'Strength Training', exercises: ['3x10 Bench Press', '3x12 Squats', '3x15 Deadlifts'] },
-//   { day: 'Tue', dateDigit: '10', name: 'Cardio Day', exercises: ['30 min Treadmill Run', '20 min Jump Rope', '10 min Cool Down Stretch'] },
-//   { day: 'Wed', dateDigit: '11', name: 'Upper Body Focus', exercises: ['4x8 Pull-ups', '3x12 Shoulder Press', '3x15 Tricep Dips', '3x12 Bicep Curls'] },
-//   { day: 'Thur', dateDigit: '12', name: 'Leg Day', exercises: ['4x10 Leg Press', '3x12 Lunges', '3x15 Calf Raises', '3x20 Leg Extensions'] },
-//   { day: 'Fri', dateDigit: '13', name: 'HIIT Workout', exercises: ['5 rounds of: 30s Burpees', '30s Mountain Climbers', '30s High Knees', '30s Rest'] },
-//   { day: 'Sat', dateDigit: '14', name: 'Core and Flexibility', exercises: ['3x20 Crunches', '3x30s Planks', '15 min Yoga Flow', '10 min Foam Rolling'] },
-//   { day: 'Sun', dateDigit: '15', name: 'Active Recovery', exercises: ['45 min Brisk Walk', '20 min Light Stretching', '15 min Meditation'] },
-// ];
+
 
 export default function JournalScreen() {
   const [workouts, setWorkouts] = useState([]);
@@ -133,38 +120,6 @@ export default function JournalScreen() {
     }
   };
 
-  const logWorkoutStructure = (workout) => {
-    console.log('Workout structure:', JSON.stringify(workout, null, 2));
-  };
-
-
-
-  const ExerciseDetails = ({ exercise }) => {
-    // Group the sets by exercise name
-    const groupedSets = exercise.sets.reduce((acc, set) => {
-      if (!acc[set.exercise_name]) {
-        acc[set.exercise_name] = [];
-      }
-      acc[set.exercise_name].push(set);
-      return acc;
-    }, {});
-
-    return (
-      <View style={styles.exerciseDetails}>
-        {Object.entries(groupedSets).map(([exerciseName, sets], index) => (
-          <View key={index}>
-            <Text style={styles.exerciseTitle}>{exerciseName}</Text>
-            {sets.map((set, setIndex) => (
-              <Text key={setIndex} style={styles.setDetails}>
-                Set {setIndex + 1} - {set.weight || 'N/A'} lbs - {set.reps || 'N/A'} reps
-              </Text>
-            ))}
-          </View>
-        ))}
-      </View>
-    );
-  };
-
   const WorkoutDetailsModal = () => {
     const groupExercises = (exercises) => {
       return exercises.reduce((acc, exercise) => {
@@ -213,6 +168,7 @@ export default function JournalScreen() {
       </Modal>
     );
   };
+
   const groupExercises = (exercises) => {
     const grouped = [];
     let currentExercise = null;
@@ -266,12 +222,6 @@ export default function JournalScreen() {
     });
     return grouped;
   };
-
-  const formatMonthYear = (dateString) => {
-    const date = parseISO(dateString);
-    return format(date, 'MMMM yyyy');
-  };
-
 
 
   return (
@@ -428,14 +378,6 @@ const styles = StyleSheet.create({
     color: 'gray',
     fontWeight: 'bold',
     fontSize: 15,
-  },
-  workoutLog: {
-    flexDirection: 'row',
-    alignItems: 'flex-start', // Align items to the top
-    borderRadius: 30,
-    padding: 16,
-    backgroundColor: 'white',
-    flex: 1,
   },
   workoutInfo: {
     flex: 1,
