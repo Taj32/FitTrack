@@ -206,7 +206,8 @@ const App = () => {
 
       <View style={styles.searchBarContainer}>
         <View style={styles.searchRow}>
-          <Text style={styles.title}>Exercises</Text>
+          <Text style={styles.pageTitle}>Exercises</Text>
+          
         </View>
 
         <TextInput
@@ -236,14 +237,18 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white', //'#f2f1f6', [change later when have better images]
+    backgroundColor: '#f2f1f6', //'#f2f1f6', [change later when have better images]
   },
   searchBarContainer: {
-    flex: 1.5,
-    backgroundColor: 'white',
+    flex: 1.25,
+    //backgroundColor: 'red',
+    backgroundColor: '#f2f1f6',
     //backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pageTitle: {
+    fontSize: wp(7),
   },
   title: {
     fontSize: wp(5.5),
@@ -265,13 +270,16 @@ const styles = StyleSheet.create({
     flex: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#f2f1f6 ',
   },
   box: {
     width: wp(90), // Replace 'wp' and 'hp' with the appropriate values or functions
     height: hp(20),
-    borderWidth: wp(0.2),
-    borderColor: 'black',
+    marginBottom: 10,
+    //borderWidth: wp(0.2),
+    //borderColor: 'red',
+    borderRadius: 30,
+    backgroundColor: 'white',
     flexDirection: 'row', // Add this line to arrange children in a row
     alignItems: 'center', // Centers children vertically
     justifyContent: 'center', // Centers children horizontally
