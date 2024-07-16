@@ -8,6 +8,11 @@ import { format, parseISO, startOfMonth, isSameMonth } from 'date-fns';
 import { useState, useEffect, useRef } from 'react';
 import { Animated, } from 'react-native';
 import { router } from 'expo-router';
+import { Alert } from 'react-native';
+
+
+
+import { LayoutAnimation } from 'react-native';
 
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -52,6 +57,7 @@ export default function JournalScreen() {
   };
 
   const setEditMode = (value) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsEditMode(value);
     Object.keys(animatedValues).forEach(id => {
       animateSlide(id, value ? 1 : 0);
@@ -61,6 +67,24 @@ export default function JournalScreen() {
   const openWorkoutDetails = (workout) => {
     setSelectedWorkout(workout);
     setModalVisible(true);
+  };
+
+  const confirmDelete = (workoutId) => {
+    Alert.alert(
+      "Confirm Deletion",
+      "Are you sure you want to delete this workout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          onPress: () => deleteWorkout(workoutId),
+          style: "destructive"
+        }
+      ]
+    );
   };
 
   const deleteWorkout = async (workoutId) => {
@@ -83,10 +107,26 @@ export default function JournalScreen() {
         throw new Error('Failed to delete workout');
       }
 
-      // Remove the workout from the local state
-      console.log("deleted the workout!");
-      setWorkouts(workouts.filter(workout => workout.id !== workoutId));
+      // Animate edit mode off
       setEditMode(false);
+
+      // Wait for the edit mode animation to complete
+      setTimeout(() => {
+        // Configure the layout animation
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+        // Remove the workout from the local state
+        console.log("deleted the workout!");
+        setWorkouts(workouts.filter(workout => workout.id !== workoutId));
+      }, 300); // Adjust this timeout to match your edit mode animation duration
+
+      // // Configure the animation
+      // LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+      // // Remove the workout from the local state
+      // console.log("deleted the workout!");
+      // setWorkouts(workouts.filter(workout => workout.id !== workoutId));
+      // setEditMode(false);
     } catch (error) {
       console.error('Error deleting workout:', error);
     }
@@ -228,20 +268,21 @@ export default function JournalScreen() {
     <SafeAreaView style={styles.container}>
 
       <ThemedView style={styles.buttonContainer}>
-        <ThemedText
-          style={styles.editButton}
-          onPress={() => setEditMode(!isEditMode)}
-        >
-          {isEditMode ? 'Done' : 'Edit'}
-        </ThemedText>
+        <TouchableOpacity onPress={() => setEditMode(!isEditMode)}>
+          <ThemedText style={styles.editButton}>
+            {isEditMode ? 'Done' : 'Edit'}
+          </ThemedText>
+        </TouchableOpacity>
 
-        <Ionicons
-          name="add-circle-outline"
-          size={24}
-          color='#007AFF'
-          style={{ marginRight: 16 }}
-          onPress={() => router.replace('/workout')}
-        />
+        <View style={styles.spacer} />
+
+        <TouchableOpacity onPress={() => router.replace('/workout')}>
+          <Ionicons
+            name="add-circle-outline"
+            size={24}
+            color='#007AFF'
+          />
+        </TouchableOpacity>
       </ThemedView>
 
       <ScrollView>
@@ -278,7 +319,7 @@ export default function JournalScreen() {
                   ]}>
                     <TouchableOpacity
                       style={styles.deleteButton}
-                      onPress={() => deleteWorkout(workout.id)}
+                      onPress={() => confirmDelete(workout.id)}
                     >
                       <Ionicons name="remove-circle" size={24} color="red" />
                     </TouchableOpacity>
@@ -308,7 +349,7 @@ export default function JournalScreen() {
                               {`${exercise.sets}x ${exercise.name}`}
                             </Text>
                           ))
-                         // <View></View>
+                          // <View></View>
                         ) : (
                           <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
                         )}
@@ -345,17 +386,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f2f1f6',
   },
   buttonContainer: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 16,
     marginBottom: 8,
-    marginLeft: 16,
-
+    marginHorizontal: 16,
     backgroundColor: '#f2f1f6',
   },
   editButton: {
-    flex: 1,
     fontSize: 17,
     color: '#007AFF',
+  },
+  spacer: {
+    flex: 1,
   },
   subtitleContainer: {
     flexDirection: 'row', alignItems: 'center',
