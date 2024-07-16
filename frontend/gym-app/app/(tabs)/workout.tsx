@@ -487,7 +487,7 @@ export default function WorkoutScreen() {
               </View>
 
               <ScrollView
-                style={{ flex: 1 }}
+                // style={{ flex: 1 }}
                 contentContainerStyle={styles.modalContent}
               >
                 {(() => {
@@ -528,7 +528,11 @@ export default function WorkoutScreen() {
                 {/* <Button title="Save" onPress={handleSave} disabled={!areAllInputsFilled} /> */}
 
               </ScrollView>
-              <Button title="Save" onPress={handleSave} />
+
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                <ThemedText>Save</ThemedText>
+              </TouchableOpacity>
+              {/* <Button title="Save" onPress={handleSave} /> */}
             </ThemedView>
           </SafeAreaView>
         </Modal>
@@ -623,6 +627,7 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 16,
     marginBottom: 16,
   },
   backButton: {
@@ -660,9 +665,10 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 20,
+    paddingHorizontal: 10,
     borderRadius: 20,
     paddingBottom: 0,
+    //marginBottom: 0,
 
   },
   exerciseName: {
