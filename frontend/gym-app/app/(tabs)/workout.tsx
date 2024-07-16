@@ -417,6 +417,9 @@ export default function WorkoutScreen() {
         <ThemedText style={styles.editButton} onPress={() => alert('Edit pressed')}>
           Edit
         </ThemedText>
+
+        <View style={styles.spacer} />
+
         <Ionicons
           name="add-circle-outline"
           size={24}
@@ -590,16 +593,19 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   buttonContainer: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 16,
+    marginBottom: 8,
     marginLeft: 16,
-
     backgroundColor: '#f2f1f6',
   },
   editButton: {
-    flex: 1,
     fontSize: 17,
     color: '#007AFF',
+  },
+  spacer: {
+    flex: 1,
   },
   workoutHeader: {
     marginTop: 10,
@@ -655,7 +661,7 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: 'white',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 20,
     paddingBottom: 0,
 
   },

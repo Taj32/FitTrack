@@ -519,7 +519,10 @@ const styles = StyleSheet.create({
   },
   dateWidgetContainer: {
     // This will add space between the DateWidget and the workout info
-    marginRight: 30,
+    marginRight: 15,
+    //width: 25,
+    //height: 25,
+
   },
 
 

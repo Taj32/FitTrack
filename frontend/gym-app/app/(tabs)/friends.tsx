@@ -14,12 +14,15 @@ export default function FriendScreen() {
                 <ThemedText style={styles.editButton} onPress={() => alert('Edit pressed')}>
                     Edit
                 </ThemedText>
+
+                <View style={styles.spacer} />
+
                 <Ionicons
                     name="add-circle-outline"
                     size={24}
                     color='#007AFF'
                     style={{ marginRight: 16 }}
-                    onPress={() => alert('"+" pressed')}
+                    onPress={() => alert('plus pressed')}
                 />
             </ThemedView>
 
@@ -46,16 +49,19 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     buttonContainer: {
-        flexDirection: 'row', alignItems: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
         marginTop: 16,
+        marginBottom: 8,
         marginLeft: 16,
-
         backgroundColor: '#f2f1f6',
     },
     editButton: {
-        flex: 1,
         fontSize: 17,
         color: '#007AFF',
+    },
+    spacer: {
+        flex: 1,
     },
     titleContainer: {
         paddingTop: 20,
@@ -85,7 +91,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: 'gray',
         fontSize: 17,
-        margin: 0,        
+        margin: 0,
         paddingHorizontal: 30,
     }
 });
