@@ -260,6 +260,9 @@ export default function WorkoutScreen() {
   // Dynamic cases
   const handleWorkoutPress = (workout: Workout) => {
     // Create a unique copy of the workout
+
+    console.log("workout: " + workout);
+    console.log("reference workouts: " + workout.exercises);
     const uniqueWorkout = {
       id: Date.now(), // Using current timestamp as a unique ID
       name: `${workout.name}`,
@@ -371,10 +374,10 @@ export default function WorkoutScreen() {
 
     return (
       <Modal visible={visible} animationType="slide">
-        <ThemedView style={styles.modalContainer}>
+        <ThemedView style={styles.addModalContainer}>
           <ThemedText type="title">Add New Workout</ThemedText>
           <TextInput
-            style={styles.input}
+            style={styles.nameInput}
             placeholder="Workout Name"
             value={workoutName}
             onChangeText={setWorkoutName}
@@ -568,7 +571,14 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   modalContainer: {
-    marginTop: 32,
+    marginTop: 64,
+    padding: 16,
+    marginHorizontal: 24,
+    backgroundColor: '#f2f1f6',
+    borderRadius: 30,
+  },
+  addModalContainer: {
+    marginTop: 128,
     padding: 16,
     marginHorizontal: 24,
     backgroundColor: '#f2f1f6',
@@ -638,10 +648,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginRight: 40,  // to offset the back button and center the title
   },
+  nameInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    //paddingTop: 100,
+    //marginTop: 10,
+    padding: 10,
+    marginTop: 10,
+    marginBottom: 10,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
+    //paddingTop: 100,
+    //marginTop: 10,
     padding: 10,
     marginBottom: 10,
   },

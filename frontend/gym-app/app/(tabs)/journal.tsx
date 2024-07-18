@@ -153,7 +153,12 @@ export default function JournalScreen() {
       }
 
       const data = await response.json();
-      setWorkouts(data);
+      console.log("data ---", data);
+
+      const filteredData = data.filter(workout => 
+        !workout.exercises.some(exercise => exercise.weight === -1)
+      );
+      setWorkouts(filteredData);
 
     } catch (error) {
       console.error('Error fetching workouts:', error);

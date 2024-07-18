@@ -28,6 +28,29 @@ export const getUserWorkouts = async (req, res) => {
 
         console.log("RAW", JSON.stringify(workouts, null, 2)); // Log raw workout data
 
+        // // Add logging for empty Exercises arrays
+        // workouts.forEach(workout => {
+        //     if (workout.Exercises.length === 0) {
+        //         console.log(`LOG: "Exercises" array is empty for workout ID ${workout.id}`);
+        //     }
+        // });
+
+        // Populate empty Exercises arrays
+        workouts.forEach(workout => {
+            if (workout.Exercises.length === 0 && workout.exercises) {
+                workout.Exercises = workout.exercises.flatMap(exercise => {
+                    return Array(exercise.sets).fill({
+                        exercise_name: exercise.name,
+                        weight: -1,
+                        reps: -1,
+                        sets: 1,
+                        date: workout.date_created
+                    });
+                });
+                console.log(`Populated "Exercises" array for workout ID ${workout.id}`);
+            }
+        });
+
 
         // Format the response
         const formattedWorkouts = workouts.map(workout => ({
