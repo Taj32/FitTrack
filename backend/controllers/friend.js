@@ -1,11 +1,8 @@
 import { User, Friendship } from '../models/index.js';
+import { Op } from 'sequelize';  // Add this line
+
 
 export const sendFriendRequest = async (req, res) => {
-    // const { friendId } = req.body;  // Rename recipientId to friendId
-    // const userId = req.userId;
-
-    // console.log('req.userId:', req.userId);
-    // console.log('req.body:', req.body);
 
     const { friendId } = req.body;
     const userEmail = req.email;
@@ -16,7 +13,6 @@ export const sendFriendRequest = async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
     }
 
-    //const requesterId = user.id;
 
     try {
         const existingRequest = await Friendship.findOne({
@@ -45,13 +41,20 @@ export const sendFriendRequest = async (req, res) => {
 
 export const acceptFriendRequest = async (req, res) => {
     const { requestId } = req.params;
-    const userId = req.userId;
+    const userEmail = req.email;
+
+    console.log("params: " + requestId);
 
     try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
         const request = await Friendship.findOne({
             where: {
-                id: requestId,
-                recipientId: userId,
+                user_id: requestId,
+                friend_id: user.id,
                 status: 'pending'
             }
         });
@@ -72,13 +75,18 @@ export const acceptFriendRequest = async (req, res) => {
 
 export const rejectFriendRequest = async (req, res) => {
     const { requestId } = req.params;
-    const userId = req.userId;
+    const userEmail = req.email;
 
     try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
         const request = await Friendship.findOne({
             where: {
                 id: requestId,
-                recipientId: userId,
+                friend_id: user.id,
                 status: 'pending'
             }
         });
@@ -98,33 +106,38 @@ export const rejectFriendRequest = async (req, res) => {
 };
 
 export const getFriends = async (req, res) => {
-    const userId = req.userId;
+    const userEmail = req.email;
 
     try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
         const friends = await Friendship.findAll({
             where: {
                 status: 'accepted',
                 [Op.or]: [
-                    { requesterId: userId },
-                    { recipientId: userId }
+                    { user_id: user.id },
+                    { friend_id: user.id }
                 ]
             },
             include: [
                 {
                     model: User,
-                    as: 'requester',
+                    as: 'user',
                     attributes: ['id', 'name', 'email']
                 },
                 {
                     model: User,
-                    as: 'recipient',
+                    as: 'friend',
                     attributes: ['id', 'name', 'email']
                 }
             ]
         });
 
         const formattedFriends = friends.map(friendship => {
-            const friend = friendship.requesterId === userId ? friendship.recipient : friendship.requester;
+            const friend = friendship.user_id === user.id ? friendship.friend : friendship.user;
             return {
                 id: friend.id,
                 name: friend.name,
