@@ -1,4 +1,6 @@
-import { User, Friendship } from '../models/index.js';
+import { request } from 'express';
+import { User, Friendship, sequelize } from '../models/index.js';
+// import sequelize from '../models/index.js';
 import { Op } from 'sequelize';  // Add this line
 
 
@@ -99,6 +101,65 @@ export const rejectFriendRequest = async (req, res) => {
         await request.save();
 
         res.status(200).json({ message: 'Friend request rejected', request: request });
+    } catch (error) {
+        console.error('Error rejecting friend request:', error);
+        res.status(500).json({ message: 'Error rejecting friend request', error: error.message });
+    }
+};
+
+export const removeFriend = async (req, res) => {
+    const { requestId } = req.params;
+    const userEmail = req.email;
+    
+
+    try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Start a transaction
+        const t = await sequelize.transaction();
+
+        const friend = await Friendship.findOne({
+            // where: {
+            //     id: requestId,
+            //     friend_id: user.id,
+            //     status: 'accepted'
+            // },
+            // transaction: t
+
+            where: {
+                [Op.or]: [
+                    {
+                        user_id: user.id, // from jwt token
+                        friend_id: requestId,
+                    },
+                    {
+                        user_id: requestId,
+                        friend_id: user.id,
+                    }
+                ],
+                status: 'accepted'
+            },
+            transaction: t
+        });
+
+        console.log("requestId: " + requestId);
+        console.log("user.id: " + user.id);
+
+        if (!friend) {
+            await t.rollback();
+            return res.status(404).json({ message: 'Friend not found' });
+        }
+
+         // Remove the friendship
+         await friend.destroy({ transaction: t });
+
+         // Commit the transaction
+         await t.commit();
+
+        res.status(200).json({ message: 'Friend was deleted' });
     } catch (error) {
         console.error('Error rejecting friend request:', error);
         res.status(500).json({ message: 'Error rejecting friend request', error: error.message });

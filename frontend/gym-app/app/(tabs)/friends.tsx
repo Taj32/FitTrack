@@ -14,7 +14,10 @@ const topElementsHeight = 100;
 export default function FriendScreen() {
 
     const [friends, setFriends] = useState([]);
+    const [isEditMode, setIsEditMode] = useState(false);
 
+
+    //Normal friends printing
     const fetchFriends = async () => {
         try {
             const userToken = await AsyncStorage.getItem('userToken');
@@ -38,28 +41,97 @@ export default function FriendScreen() {
         }
     };
 
+
+    const removeFriend = async (id) => {
+        try {
+            console.log("requestid: " + id);
+            const userToken = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_URL}/friends/remove-friend/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to remove friend');
+            }
+
+            // Remove the friend from the local state
+            setFriends(friends.filter(friend => friend.id !== id));
+        } catch (error) {
+            console.error('Error removing friend:', error);
+            alert('Failed to remove friend. Please try again.');
+        }
+    };
+
+
+    // Multiple fetchfriends
+    // const fetchFriends = async () => {
+    //     try {
+    //         const userToken = await AsyncStorage.getItem('userToken');
+    //         const response = await fetch(`${API_URL}/friends/get-friends`, {
+    //             method: 'GET',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //                 'Authorization': `Bearer ${userToken}`
+    //             }
+    //         });
+
+    //         if (!response.ok) {
+    //             throw new Error('Failed to fetch friends');
+    //         }
+
+    //         const data = await response.json();
+    //         console.log('Fetched friends:', JSON.stringify(data, null, 2));
+    //         return data.friends;
+    //     } catch (error) {
+    //         console.error('Error fetching friends:', error);
+    //         return [];
+    //     }
+    // };
+
     useEffect(() => {
-        //fetchFriends();  //prints friends list normally
+        fetchFriends();  //prints friends list normally
 
         // for now we will print the single friend, 10 times for testing purposes
+        // fetchFriends().then(fetchedFriends => {
+        //     if (fetchedFriends.length > 0) {
+        //         // Repeat the first friend 10 times
+        //         const repeatedFriends = Array(10).fill(fetchedFriends[0]);
+        //         setFriends(repeatedFriends);
+        //     }
+        // });
     }, []);
 
 
-    const FriendItem = ({ name }) => (
+    const FriendItem = ({ friend, onRemove }) => (
         <ThemedView style={styles.friendItem}>
+            {isEditMode && (
+                <ThemedText
+                    style={styles.removeButton}
+                    onPress={() => onRemove(friend.id)}
+                >
+                    Remove
+                </ThemedText>
+            )}
             <Image
-                source={require('@/assets/images/average-user-sample.png')} // Make sure this image exists in your project
+                source={require('@/assets/images/average-user-sample.png')}
                 style={styles.profilePic}
             />
-            <ThemedText style={styles.friendName}>{name}</ThemedText>
+            <ThemedText style={styles.friendName}>{friend.name}</ThemedText>
         </ThemedView>
     );
 
     return (
         <SafeAreaView style={styles.container}>
             <ThemedView style={styles.buttonContainer}>
-                <ThemedText style={styles.editButton} onPress={() => alert('Edit pressed')}>
-                    Edit
+                <ThemedText
+                    style={styles.editButton}
+                    onPress={() => setIsEditMode(!isEditMode)}
+                >
+                    {isEditMode ? 'Done' : 'Edit'}
                 </ThemedText>
 
                 <View style={styles.spacer} />
@@ -80,8 +152,10 @@ export default function FriendScreen() {
             {friends.length > 0 ? (
                 <FlatList
                     data={friends}
-                    renderItem={({ item }) => <FriendItem name={item.name} />}
-                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => (
+                        <FriendItem friend={item} onRemove={removeFriend} />
+                    )}
+                    keyExtractor={(item, index) => `${item.id}-${index}`}
                     contentContainerStyle={styles.friendList}
                 />
             ) : (
@@ -168,5 +242,15 @@ const styles = StyleSheet.create({
         fontSize: 17,
         margin: 0,
         paddingHorizontal: 30,
-    }
+    },
+    removeButton: {
+        color: 'red',
+        marginRight: 10,
+    },
+
+    friendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
 });
