@@ -4,7 +4,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, Dimensions, FlatList } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { TouchableOpacity, Animated, LayoutAnimation } from 'react-native';
+import React from 'react';
 
 const API_URL = 'http://192.168.1.205:5000';
 
@@ -15,6 +18,7 @@ export default function FriendScreen() {
 
     const [friends, setFriends] = useState([]);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [animatedValues, setAnimatedValues] = useState({});
 
 
     //Normal friends printing
@@ -58,8 +62,9 @@ export default function FriendScreen() {
                 throw new Error('Failed to remove friend');
             }
 
-            // Remove the friend from the local state
-            setFriends(friends.filter(friend => friend.id !== id));
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setFriends(prevFriends => prevFriends.filter(friend => friend.id !== id));
+
         } catch (error) {
             console.error('Error removing friend:', error);
             alert('Failed to remove friend. Please try again.');
@@ -67,69 +72,98 @@ export default function FriendScreen() {
     };
 
 
-    // Multiple fetchfriends
-    // const fetchFriends = async () => {
-    //     try {
-    //         const userToken = await AsyncStorage.getItem('userToken');
-    //         const response = await fetch(`${API_URL}/friends/get-friends`, {
-    //             method: 'GET',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 'Authorization': `Bearer ${userToken}`
-    //             }
-    //         });
-
-    //         if (!response.ok) {
-    //             throw new Error('Failed to fetch friends');
-    //         }
-
-    //         const data = await response.json();
-    //         console.log('Fetched friends:', JSON.stringify(data, null, 2));
-    //         return data.friends;
-    //     } catch (error) {
-    //         console.error('Error fetching friends:', error);
-    //         return [];
-    //     }
-    // };
 
     useEffect(() => {
         fetchFriends();  //prints friends list normally
 
-        // for now we will print the single friend, 10 times for testing purposes
-        // fetchFriends().then(fetchedFriends => {
-        //     if (fetchedFriends.length > 0) {
-        //         // Repeat the first friend 10 times
-        //         const repeatedFriends = Array(10).fill(fetchedFriends[0]);
-        //         setFriends(repeatedFriends);
-        //     }
-        // });
+
     }, []);
 
+    useEffect(() => {
+        const newAnimatedValues = {};
+        friends.forEach(friend => {
+            if (!animatedValues[friend.id]) {
+                newAnimatedValues[friend.id] = new Animated.Value(0);
+            }
+        });
+        setAnimatedValues(prevValues => ({ ...prevValues, ...newAnimatedValues }));
+    }, [friends]);
 
-    const FriendItem = ({ friend, onRemove }) => (
-        <ThemedView style={styles.friendItem}>
-            {isEditMode && (
-                <ThemedText
-                    style={styles.removeButton}
-                    onPress={() => onRemove(friend.id)}
-                >
-                    Remove
-                </ThemedText>
-            )}
-            <Image
-                source={require('@/assets/images/average-user-sample.png')}
-                style={styles.profilePic}
-            />
-            <ThemedText style={styles.friendName}>{friend.name}</ThemedText>
-        </ThemedView>
-    );
+
+    const animateSlide = (id, toValue) => {
+        Animated.spring(animatedValues[id], {
+            toValue,
+            friction: 8,
+            tension: 50,
+            useNativeDriver: false,
+        }).start();
+    };
+
+
+    const setEditMode = (value) => {
+        //LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIsEditMode(value);
+    };
+
+    const FriendItem = React.memo(({ friend, onRemove, isEditMode }) => {
+        const slideAnim = useRef(new Animated.Value(0)).current;
+
+        useEffect(() => {
+            Animated.timing(slideAnim, {
+                toValue: isEditMode ? 1 : 0,
+                duration: 300,
+                useNativeDriver: true,
+            }).start();
+        }, [isEditMode]);
+
+        const buttonTranslateX = slideAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-50, 0],
+        });
+
+        const contentTranslateX = slideAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 50],
+        });
+
+        return (
+            <View style={styles.friendItemContainer}>
+                <Animated.View style={[
+                    styles.deleteButtonContainer,
+                    {
+                        transform: [{ translateX: buttonTranslateX }],
+                    }
+                ]}>
+                    <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => onRemove(friend.id)}
+                    >
+                        <Ionicons name="remove-circle" size={24} color="red" />
+                    </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[
+                    styles.friendItem,
+                    {
+                        transform: [{ translateX: contentTranslateX }],
+                    }
+                ]}>
+                    <Image
+                        source={require('@/assets/images/average-user-sample.png')}
+                        style={styles.profilePic}
+                    />
+                    <ThemedText style={styles.friendName}>{friend.name}</ThemedText>
+                </Animated.View>
+            </View>
+        );
+    });
+
 
     return (
         <SafeAreaView style={styles.container}>
             <ThemedView style={styles.buttonContainer}>
                 <ThemedText
                     style={styles.editButton}
-                    onPress={() => setIsEditMode(!isEditMode)}
+                    onPress={() => setEditMode(!isEditMode)}
                 >
                     {isEditMode ? 'Done' : 'Edit'}
                 </ThemedText>
@@ -153,10 +187,15 @@ export default function FriendScreen() {
                 <FlatList
                     data={friends}
                     renderItem={({ item }) => (
-                        <FriendItem friend={item} onRemove={removeFriend} />
+                        <FriendItem
+                            friend={item}
+                            onRemove={removeFriend}
+                            isEditMode={isEditMode}
+                        />
                     )}
-                    keyExtractor={(item, index) => `${item.id}-${index}`}
+                    keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={styles.friendList}
+                    extraData={isEditMode}
                 />
             ) : (
                 <View style={styles.defaultContainer}>
@@ -181,22 +220,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 16,
     },
-    friendItem: {
-        backgroundColor: '#f2f1f6',
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 8,
-    },
-    profilePic: {
-        backgroundColor: 'blue',
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        marginRight: 16,
-    },
-    friendName: {
-        fontSize: 17,
-    },
+
     buttonContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -248,9 +272,46 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
 
+    friendItemContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 5,
+        overflow: 'hidden',
+    },
+    deleteButtonContainer: {
+        position: 'absolute',
+        left: 0,
+        height: '100%',
+        justifyContent: 'center',
+        width: 50, // Make sure this matches the outputRange in translateX
+    },
+    deleteButton: {
+        padding: 10,
+        alignItems: 'center',
+    },
     friendItem: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 30,
         paddingVertical: 8,
+        paddingHorizontal: 16,
+        flex: 1,
     },
+    profilePic: {
+        backgroundColor: 'blue',
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: 16,
+    },
+    friendName: {
+        fontSize: 17,
+    },
+
+    // friendItem: {
+    //     flexDirection: 'row',
+    //     alignItems: 'center',
+    //     paddingVertical: 8,
+    // },
 });

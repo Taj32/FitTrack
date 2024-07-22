@@ -4,6 +4,7 @@ import { User, Friendship, sequelize } from '../models/index.js';
 import { Op } from 'sequelize';  // Add this line
 
 
+
 export const sendFriendRequest = async (req, res) => {
 
     const { friendId } = req.body;
