@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, Dimensions, FlatList } from 'react-native';
+import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, Dimensions, FlatList, Alert } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -107,28 +107,44 @@ export default function FriendScreen() {
     };
 
     const removeFriend = useCallback(async (id) => {
-        try {
-            const userToken = await AsyncStorage.getItem('userToken');
-            const response = await fetch(`${API_URL}/friends/remove-friend/${id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userToken}`
+        Alert.alert(
+            "Confirm Deletion",
+            "Are you sure you want to remove this friend?",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                {
+                    text: "Remove",
+                    onPress: async () => {
+                        try {
+                            const userToken = await AsyncStorage.getItem('userToken');
+                            const response = await fetch(`${API_URL}/friends/remove-friend/${id}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${userToken}`
+                                }
+                            });
+    
+                            if (!response.ok) {
+                                throw new Error('Failed to remove friend');
+                            }
+    
+                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                            setFriends(prevFriends => prevFriends.filter(friend => friend.id !== id));
+                        } catch (error) {
+                            console.error('Error removing friend:', error);
+                            alert('Failed to remove friend. Please try again.');
+                        }
+                    },
+                    style: "destructive"
                 }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to remove friend');
-            }
-
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            setFriends(prevFriends => prevFriends.filter(friend => friend.id !== id));
-        } catch (error) {
-            console.error('Error removing friend:', error);
-            alert('Failed to remove friend. Please try again.');
-        }
+            ],
+            { cancelable: false }
+        );
     }, []);
-
     const toggleEditMode = useCallback(() => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setIsEditMode(prev => !prev);
