@@ -1,6 +1,7 @@
 // controllers/workout.js
 
-import { User, Workout, Exercise, sequelize } from '../models/index.js';
+import { User, Workout, Exercise, sequelize, Friendship } from '../models/index.js';
+import { Op } from 'sequelize';
 
 
 // import User from '../models/user.js';
@@ -223,5 +224,114 @@ export const completeWorkout = async (req, res) => {
     } catch (error) {
         console.error('Error completing workout:', error);
         res.status(500).json({ message: 'Error completing workout', error: error.message });
+    }
+};
+
+export const getFriendsRecentWorkouts = async (req, res) => {
+    const userEmail = req.email;
+
+    try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log('User:', user.toJSON()); // Log user data
+
+        // Get user's friends
+        const friendships = await Friendship.findAll({
+            where: {
+                status: 'accepted',
+                [Op.or]: [
+                    { user_id: user.id },
+                    { friend_id: user.id }
+                ]
+            },
+            include: [
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'name', 'email']
+                },
+                {
+                    model: User,
+                    as: 'friend',
+                    attributes: ['id', 'name', 'email']
+                }
+            ]
+        });
+
+        console.log('Friendships:', JSON.stringify(friendships, null, 2)); // Log friendships
+
+        const friendIds = friendships.reduce((acc, friendship) => {
+            const friendId = friendship.user_id === user.id ? friendship.friend_id : friendship.user_id;
+            if (friendId) {
+                acc.push(friendId);
+            }
+            return acc;
+        }, []);
+
+        console.log('Friend IDs:', friendIds); // Log friend IDs
+
+        if (friendIds.length === 0) {
+            return res.status(200).json({ message: 'No friends found', workouts: [] });
+        }
+
+        // Get recent workouts of friends
+        const recentWorkouts = await Workout.findAll({
+            where: {
+                user_id: {
+                    [Op.in]: friendIds
+                },
+                date_created: {
+                    [Op.gte]: new Date(new Date() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+                }
+            },
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'name', 'email']
+                },
+                {
+                    model: Exercise,
+                    attributes: ['exercise_name', 'weight', 'reps', 'sets', 'date']
+                }
+            ],
+            order: [['date_created', 'DESC']],
+            limit: 50 // Limit to 50 most recent workouts
+        });
+
+        console.log('Recent Workouts:', JSON.stringify(recentWorkouts, null, 2)); // Log recent workouts
+
+        // Format the workouts data
+        const formattedWorkouts = recentWorkouts.map(workout => ({
+            id: workout.id,
+            name: workout.name,
+            date_created: workout.date_created,
+            user_id: workout.user_id,
+            user: workout.User ? {
+                id: workout.User.id,
+                name: workout.User.name,
+                email: workout.User.email
+            } : null,
+            exercises: workout.Exercises ? workout.Exercises.map(exercise => ({
+                name: exercise.exercise_name,
+                weight: exercise.weight,
+                reps: exercise.reps,
+                sets: exercise.sets,
+                date: exercise.date
+            })) : []
+        }));
+
+        res.status(200).json({ 
+            workouts: formattedWorkouts 
+        });
+    } catch (error) {
+        console.error('Error getting friends\' recent workouts:', error);
+        res.status(500).json({ 
+            message: 'Error getting friends\' recent workouts', 
+            error: error.message,
+            stack: error.stack // Include the error stack for debugging
+        });
     }
 };

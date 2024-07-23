@@ -15,7 +15,9 @@ Exercise.belongsTo(User, { foreignKey: 'userId' });
 Workout.hasMany(Exercise, { foreignKey: 'workout_id' });
 Exercise.belongsTo(Workout, { foreignKey: 'workout_id' });
 
-
+//friendship
+// Friendship.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
+// Friendship.belongsTo(User, { as: 'friend', foreignKey: 'friend_id' });
 
 // Export models and sequelize instance
 export { User, Workout, Exercise, Friendship, sequelize };
