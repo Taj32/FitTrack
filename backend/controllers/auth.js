@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 import { User, Workout, Exercise, sequelize } from '../models/index.js';
+import { Op } from 'sequelize';  // Add this line
 
 
 
@@ -115,6 +116,35 @@ const getName = (req, res, next) => {
         });
 };
 
+const getUsers = async (req, res, next) => {
+    try {
+        const { keyword } = req.query;
+        let users;
+
+        if (keyword) {
+            users = await User.findAll({
+                where: {
+                    name: {
+                        [Op.like]: `%${keyword}%`
+                    }
+                },
+                attributes: ['id', 'name', 'email'],
+                limit: 50
+            });
+        } else {
+            users = await User.findAll({
+                attributes: ['id', 'name', 'email'],
+                limit: 50
+            });
+        }
+
+        res.status(200).json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: "Error fetching users" });
+    }
+};
+
 
 // At the end of auth.js
-export { signup, login, isAuth, getName };
+export { signup, login, isAuth, getName, getUsers };
