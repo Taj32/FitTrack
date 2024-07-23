@@ -15,7 +15,7 @@ const screenHeight = Dimensions.get('window').height;
 const topElementsHeight = 100;
 
 
-const FriendItem = React.memo(({ friend, onRemove, isEditMode }) => {
+const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
     const slideAnim = useRef(new Animated.Value(0)).current;
     const [containerWidth, setContainerWidth] = useState(0);
 
@@ -39,40 +39,43 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode }) => {
     });
 
     return (
-        <View
-            style={styles.friendItemContainer}
-            onLayout={(event) => {
-                const { width } = event.nativeEvent.layout;
-                setContainerWidth(width);
-            }}
-        >
-            <Animated.View style={[
-                styles.deleteButtonContainer,
-                {
-                    transform: [{ translateX: buttonTranslateX }],
-                }
-            ]}>
-                <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => onRemove(friend.id)}
-                >
-                    <Ionicons name="remove-circle" size={24} color="red" />
-                </TouchableOpacity>
-            </Animated.View>
-            <Animated.View style={[
-                styles.friendItem,
-                {
-                    width: containerWidth,
-                    transform: [{ translateX: contentTranslateX }],
-                }
-            ]}>
-                <Image
-                    source={require('@/assets/images/average-user-sample.png')}
-                    style={styles.profilePic}
-                />
-                <ThemedText style={styles.friendName}>{friend.name}</ThemedText>
-            </Animated.View>
-        </View>
+        <TouchableOpacity onPress={() => onPress(friend.id)}>
+            <View
+                style={styles.friendItemContainer}
+                onLayout={(event) => {
+                    const { width } = event.nativeEvent.layout;
+                    setContainerWidth(width);
+                }}
+            >
+                <Animated.View style={[
+                    styles.deleteButtonContainer,
+                    {
+                        transform: [{ translateX: buttonTranslateX }],
+                    }
+                ]}>
+                    <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => onRemove(friend.id)}
+                    >
+                        <Ionicons name="remove-circle" size={24} color="red" />
+                    </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[
+                    styles.friendItem,
+                    {
+                        width: containerWidth,
+                        transform: [{ translateX: contentTranslateX }],
+                    }
+                ]}>
+                    <Image
+                        source={require('@/assets/images/average-user-sample.png')}
+                        style={styles.profilePic}
+                    />
+                    <ThemedText style={styles.friendName}>{friend.name}</ThemedText>
+                </Animated.View>
+            </View>
+        </TouchableOpacity>
+
     );
 });
 
@@ -115,40 +118,67 @@ export default function FriendScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [searchKeyword, setSearchKeyword] = useState('');
 
+    const [isWorkoutModalVisible, setIsWorkoutModalVisible] = useState(false);
+    const [selectedFriendWorkouts, setSelectedFriendWorkouts] = useState([]);
+    const [allFriendWorkouts, setAllFriendWorkouts] = useState([]);
 
 
     useEffect(() => {
         fetchFriends();
+        fetchRecentFriendWorkouts();
     }, []);
 
     useEffect(() => {
         console.log('Users state updated:', users);
     }, [users]);
-    
+
+    const fetchRecentFriendWorkouts = async () => {
+        try {
+            const userToken = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_URL}/friends/recent-friend-workouts`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch recent friend workouts');
+            }
+
+            const data = await response.json();
+            setAllFriendWorkouts(data.workouts);
+        } catch (error) {
+            console.error('Error fetching recent friend workouts:', error);
+            alert('Failed to fetch recent workouts. Please try again.');
+        }
+    };
+
     const sendFriendRequest = async (friendId) => {
         try {
-          const userToken = await AsyncStorage.getItem('userToken');
-          const response = await fetch(`${API_URL}/friends/send-request`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${userToken}`
-            },
-            body: JSON.stringify({ friendId })
-          });
-      
-          if (!response.ok) {
-            throw new Error('Failed to send friend request');
-          }
-      
-          const data = await response.json();
-          console.log('Friend request sent:', data);
-          alert('Friend request sent successfully!');
+            const userToken = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_URL}/friends/send-request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}`
+                },
+                body: JSON.stringify({ friendId })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send friend request');
+            }
+
+            const data = await response.json();
+            console.log('Friend request sent:', data);
+            alert('Friend request sent successfully!');
         } catch (error) {
-          console.error('Error sending friend request:', error);
-          alert('Failed to send friend request. Please try again.');
+            console.error('Error sending friend request:', error);
+            alert('Failed to send friend request. Please try again.');
         }
-      };
+    };
 
     const fetchFriends = async () => {
         try {
@@ -282,8 +312,13 @@ export default function FriendScreen() {
             friend={item}
             onRemove={removeFriend}
             isEditMode={isEditMode}
+            onPress={(friendId) => {
+                const friendWorkouts = allFriendWorkouts.filter(workout => workout.user_id === friendId);
+                setSelectedFriendWorkouts(friendWorkouts);
+                setIsWorkoutModalVisible(true);
+            }}
         />
-    ), [isEditMode, removeFriend]);
+    ), [isEditMode, removeFriend, allFriendWorkouts]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -384,6 +419,35 @@ export default function FriendScreen() {
                                 setIsAddModalVisible(false);
                                 setSearchKeyword(''); // Clear search when closing modal
                             }}
+                        >
+                            <ThemedText style={styles.closeButtonText}>Close</ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={isWorkoutModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setIsWorkoutModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <ThemedText style={styles.modalTitle}>Recent Workouts</ThemedText>
+                        <FlatList
+                            data={selectedFriendWorkouts}
+                            renderItem={({ item }) => (
+                                <ThemedText style={styles.workoutItem}>
+                                    {item.name} - {item.date_created}
+                                </ThemedText>
+                            )}
+                            keyExtractor={(item) => item.id.toString()}
+                            ListEmptyComponent={<ThemedText>No recent workouts found</ThemedText>}
+                        />
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setIsWorkoutModalVisible(false)}
                         >
                             <ThemedText style={styles.closeButtonText}>Close</ThemedText>
                         </TouchableOpacity>
