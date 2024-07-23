@@ -1,8 +1,10 @@
-import { User, Workout, Exercise, sequelize } from '../models/index.js';
+import { format } from 'mysql2';
+import { User, Workout, Exercise, sequelize , Friendship} from '../models/index.js';
 
 
 // import User from '../models/user.js';
 // import Exercise from '../models/exercise.js'; // You'll need to create this model
+
 import { Op } from 'sequelize';
 
 
@@ -132,3 +134,103 @@ export const getExercise = async (req, res) => {
         res.status(500).json({ message: 'Error fetching exercises', error: error.message });
     }
 };
+
+export const getFriendsRecentExercises = async (req, res) => {
+    const userEmail = req.email;
+
+    try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Get user's friends
+        const friendships = await Friendship.findAll({
+            where: {
+                status: 'accepted',
+                [Op.or]: [
+                    { user_id: user.id },
+                    { friend_id: user.id }
+                ]
+            },
+            include: [
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'name', 'email']
+                },
+                {
+                    model: User,
+                    as: 'friend',
+                    attributes: ['id', 'name', 'email']
+                }
+            ]
+        });
+
+        console.log('Friendships:', JSON.stringify(friendships, null, 2)); // Log friendships for debugging
+
+        const friends = friendships.reduce((acc, friendship) => {
+            const friend = friendship.user_id === user.id ? friendship.friend : friendship.user;
+            if (friend && friend.id) {
+                acc.push({
+                    id: friend.id,
+                    name: friend.name || 'Unknown',
+                    email: friend.email || 'Unknown'
+                });
+            }
+            return acc;
+        }, []);
+
+        console.log('Friends:', JSON.stringify(friends, null, 2)); // Log friends for debugging
+
+        const friendIds = friends.map(friend => friend.id);
+
+        // Get recent exercises of friends
+        const recentExercises = await Exercise.findAll({
+            where: {
+                userId: {
+                    [Op.in]: friendIds
+                },
+                date: {
+                    [Op.gte]: new Date(new Date() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+                }
+            },
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'name', 'email']
+                }
+            ],
+            order: [['date', 'DESC']],
+            limit: 50 // Limit to 50 most recent exercises
+        });
+
+        // Format the exercises data
+        const formattedExercises = recentExercises.map(exercise => ({
+            id: exercise.id,
+            exercise_name: exercise.exercise_name,
+            weight: exercise.weight,
+            reps: exercise.reps,
+            sets: exercise.sets,
+            date: formatDate(exercise.date),
+            user: exercise.User ? {
+                id: exercise.User.id,
+                name: exercise.User.name || 'Unknown',
+                email: exercise.User.email || 'Unknown'
+            } : null
+        }));
+
+        res.status(200).json({ 
+            friends: friends,
+            exercises: formattedExercises 
+        });
+    } catch (error) {
+        console.error('Error getting friends\' recent exercises:', error);
+        res.status(500).json({ message: 'Error getting friends\' recent exercises', error: error.message, stack: error.stack });
+    }
+};
+
+// Helper function to format date (if not already defined)
+function formatDateFriends(date) {
+    return date instanceof Date ? date.toISOString().split('T')[0] : 'Unknown Date';
+}
