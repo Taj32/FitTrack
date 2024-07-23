@@ -76,14 +76,34 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode }) => {
     );
 });
 
-const UserItem = React.memo(({ user, onAdd }) => (
-    <TouchableOpacity onPress={() => onAdd(user.id)} style={styles.userItem}>
+// const UserItem = React.memo(({ user, onAdd }) => (
+//     <View>
+//         <TouchableOpacity onPress={() => onAdd(user.id)} style={styles.userItem}>
+//             <Image
+//                 source={require('@/assets/images/average-user-sample.png')}
+//                 style={styles.userProfilePic}
+//             />
+//             <ThemedText style={styles.userName}>{user.name}</ThemedText>
+//         </TouchableOpacity>
+//         <ThemedText style={styles.addButtonText}>Add</ThemedText>
+//     </View>
+
+// ));
+
+const UserItem = React.memo(({ user, onSendRequest }) => (
+    <View style={styles.userItem}>
         <Image
             source={require('@/assets/images/average-user-sample.png')}
             style={styles.userProfilePic}
         />
         <ThemedText style={styles.userName}>{user.name}</ThemedText>
-    </TouchableOpacity>
+        <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => onSendRequest(user.id)}
+        >
+            <ThemedText style={styles.addButtonText}>Add</ThemedText>
+        </TouchableOpacity>
+    </View>
 ));
 
 export default function FriendScreen() {
@@ -104,6 +124,31 @@ export default function FriendScreen() {
     useEffect(() => {
         console.log('Users state updated:', users);
     }, [users]);
+    
+    const sendFriendRequest = async (friendId) => {
+        try {
+          const userToken = await AsyncStorage.getItem('userToken');
+          const response = await fetch(`${API_URL}/friends/send-request`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${userToken}`
+            },
+            body: JSON.stringify({ friendId })
+          });
+      
+          if (!response.ok) {
+            throw new Error('Failed to send friend request');
+          }
+      
+          const data = await response.json();
+          console.log('Friend request sent:', data);
+          alert('Friend request sent successfully!');
+        } catch (error) {
+          console.error('Error sending friend request:', error);
+          alert('Failed to send friend request. Please try again.');
+        }
+      };
 
     const fetchFriends = async () => {
         try {
@@ -303,7 +348,7 @@ export default function FriendScreen() {
                                 value={searchKeyword}
                                 onChangeText={(text) => {
                                     setSearchKeyword(text);
-                                    if (text.length > 2) {
+                                    if (text.length > 0) {
                                         handleSearch(text);
                                     } else if (text.length === 0) {
                                         fetchUsers(); // Fetch all users when search is cleared
@@ -319,9 +364,13 @@ export default function FriendScreen() {
                                 renderItem={({ item }) => (
                                     <UserItem
                                         user={item}
-                                        onAdd={(userId) => {
-                                            console.log(`Add friend with id: ${userId}`);
-                                            setIsAddModalVisible(false);
+                                        // onAdd={(userId) => {
+                                        //     console.log(`Add friend with id: ${userId}`);
+                                        //     setIsAddModalVisible(false);
+                                        // }}
+                                        onSendRequest={(userId) => {
+                                            sendFriendRequest(userId);
+                                            // Optionally, you can close the modal or update the UI here
                                         }}
                                     />
                                 )}
@@ -442,6 +491,17 @@ const styles = StyleSheet.create({
     },
     friendName: {
         fontSize: 17,
+    },
+    addButton: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 15,
+        marginLeft: 10, // Add some space between the name and the button
+    },
+    addButtonText: {
+        color: 'white',
+        fontSize: 14,
     },
 
 
