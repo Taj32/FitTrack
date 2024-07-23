@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -29,6 +29,8 @@ export default function JournalScreen() {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [animatedValues, setAnimatedValues] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+
 
 
   useEffect(() => {
@@ -133,6 +135,8 @@ export default function JournalScreen() {
   };
 
   const fetchWorkouts = async () => {
+    setIsLoading(true);
+
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
@@ -155,13 +159,15 @@ export default function JournalScreen() {
       const data = await response.json();
       console.log("data ---", data);
 
-      const filteredData = data.filter(workout => 
+      const filteredData = data.filter(workout =>
         !workout.exercises.some(exercise => exercise.weight === -1)
       );
       setWorkouts(filteredData);
 
     } catch (error) {
       console.error('Error fetching workouts:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -290,84 +296,92 @@ export default function JournalScreen() {
         </TouchableOpacity>
       </ThemedView>
 
-      <ScrollView>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title" >Log</ThemedText>
-          {/* <Ionicons name="fitness" size={50} color="black" /> */}
-        </ThemedView>
 
-        {Object.entries(groupedWorkouts).map(([monthYear, monthWorkouts]) => (
-          <View key={monthYear}>
-            <View style={styles.subtitleContainer}>
-              <Text style={styles.monthSubText}>{monthYear}</Text>
-              <Text style={styles.workoutNumberSubText}>{monthWorkouts.length} workouts</Text>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      ) : (
+        <ScrollView>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText type="title" >Log</ThemedText>
+            {/* <Ionicons name="fitness" size={50} color="black" /> */}
+          </ThemedView>
+
+          {Object.entries(groupedWorkouts).map(([monthYear, monthWorkouts]) => (
+            <View key={monthYear}>
+              <View style={styles.subtitleContainer}>
+                <Text style={styles.monthSubText}>{monthYear}</Text>
+                <Text style={styles.workoutNumberSubText}>{monthWorkouts.length} workouts</Text>
+              </View>
+
+              {monthWorkouts.map((workout, index) => {
+                const translateX = animatedValues[workout.id]?.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 40],
+                }) || new Animated.Value(0);
+
+                return (
+                  <View key={workout.id} style={styles.workoutLogContainer}>
+                    <Animated.View style={[
+                      styles.deleteButtonContainer,
+                      {
+                        transform: [{
+                          translateX: translateX.interpolate({
+                            inputRange: [0, 40],
+                            outputRange: [-40, 0],
+                          }),
+                        }],
+                      },
+                    ]}>
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => confirmDelete(workout.id)}
+                      >
+                        <Ionicons name="remove-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </Animated.View>
+                    <Animated.View style={[
+                      styles.workoutLog,
+                      {
+                        transform: [{ translateX }],
+                      },
+                    ]}>
+                      <TouchableOpacity
+                        onPress={() => !isEditMode && openWorkoutDetails(workout)}
+                        style={{ flexDirection: 'row', flex: 1 }}
+                      >
+                        <View style={styles.dateWidgetContainer}>
+                          <DateWidget
+                            day={formatDay(workout.date_created)}
+                            dateDigit={formatDateDigit(workout.date_created)}
+                          />
+                        </View>
+
+                        <View style={styles.workoutInfo}>
+                          <Text style={styles.workoutName}>{workout.name}</Text>
+                          {workout.exercises && workout.exercises.length > 0 ? (
+                            groupExercises(workout.exercises).map((exercise, exIndex) => (
+                              <Text key={exIndex} style={styles.exerciseName}>
+                                {`${exercise.sets}x ${exercise.name}`}
+                              </Text>
+                            ))
+                            // <View></View>
+                          ) : (
+                            <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  </View>
+                );
+              })}
             </View>
+          ))}
 
-            {monthWorkouts.map((workout, index) => {
-              const translateX = animatedValues[workout.id]?.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 40],
-              }) || new Animated.Value(0);
-
-              return (
-                <View key={workout.id} style={styles.workoutLogContainer}>
-                  <Animated.View style={[
-                    styles.deleteButtonContainer,
-                    {
-                      transform: [{
-                        translateX: translateX.interpolate({
-                          inputRange: [0, 40],
-                          outputRange: [-40, 0],
-                        }),
-                      }],
-                    },
-                  ]}>
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => confirmDelete(workout.id)}
-                    >
-                      <Ionicons name="remove-circle" size={24} color="red" />
-                    </TouchableOpacity>
-                  </Animated.View>
-                  <Animated.View style={[
-                    styles.workoutLog,
-                    {
-                      transform: [{ translateX }],
-                    },
-                  ]}>
-                    <TouchableOpacity
-                      onPress={() => !isEditMode && openWorkoutDetails(workout)}
-                      style={{ flexDirection: 'row', flex: 1 }}
-                    >
-                      <View style={styles.dateWidgetContainer}>
-                        <DateWidget
-                          day={formatDay(workout.date_created)}
-                          dateDigit={formatDateDigit(workout.date_created)}
-                        />
-                      </View>
-
-                      <View style={styles.workoutInfo}>
-                        <Text style={styles.workoutName}>{workout.name}</Text>
-                        {workout.exercises && workout.exercises.length > 0 ? (
-                          groupExercises(workout.exercises).map((exercise, exIndex) => (
-                            <Text key={exIndex} style={styles.exerciseName}>
-                              {`${exercise.sets}x ${exercise.name}`}
-                            </Text>
-                          ))
-                          // <View></View>
-                        ) : (
-                          <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  </Animated.View>
-                </View>
-              );
-            })}
-          </View>
-        ))}
-
-      </ScrollView>
+        </ScrollView>
+      )}
+      
       <WorkoutDetailsModal />
     </SafeAreaView>
   );
@@ -523,11 +537,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateWidgetContainer: {
-    // This will add space between the DateWidget and the workout info
+    // adds space between the DateWidget and the workout info
     marginRight: 15,
-    //width: 25,
-    //height: 25,
 
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
 

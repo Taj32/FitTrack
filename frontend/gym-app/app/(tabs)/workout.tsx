@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Modal, SafeAreaView, Text, View, ScrollView, Button } from 'react-native';
+import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Modal, SafeAreaView, Text, View, ScrollView, Button, ActivityIndicator } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -32,49 +32,6 @@ export default function WorkoutScreen() {
     set: number;
   }
 
-  //   {
-  //     id: 1, name: 'Full Body Workout', exercises: [
-  //       { id: 1, name: 'Bench Press', set: 1 },
-  //       { id: 2, name: 'Squats', set: 1 },
-  //       { id: 3, name: 'Deadlifts', set: 1 },
-  //     ]
-  //   },
-  //   {
-  //     id: 2, name: 'Upper Body Workout', exercises: [
-  //       { id: 4, name: 'Overhead Press', set: 3 },
-  //       { id: 5, name: 'Pull-ups', set: 3 },
-  //       { id: 6, name: 'Bicep Curls', set: 3 },
-  //     ]
-  //   },
-  //   {
-  //     id: 3, name: 'Lower Body Workout', exercises: [
-  //       { id: 7, name: 'Squats', set: 4 },
-  //       { id: 8, name: 'Lunges', set: 3 },
-  //       { id: 9, name: 'Leg Press', set: 3 },
-  //     ]
-  //   },
-  //   {
-  //     id: 4, name: 'Ab Workout', exercises: [
-  //       { id: 10, name: 'Crunches', set: 3 },
-  //       { id: 11, name: 'Planks', set: 3 },
-  //       { id: 12, name: 'Russian Twists', set: 3 },
-  //     ]
-  //   },
-  //   {
-  //     id: 5, name: 'Leg Workout', exercises: [
-  //       { id: 13, name: 'Squats', set: 4 },
-  //       { id: 14, name: 'Deadlifts', set: 3 },
-  //       { id: 15, name: 'Calf Raises', set: 3 },
-  //     ]
-  //   },
-  //   {
-  //     id: 6, name: 'HIIT Workout', exercises: [
-  //       { id: 16, name: 'Burpees', set: 4 },
-  //       { id: 17, name: 'Mountain Climbers', set: 4 },
-  //       { id: 18, name: 'Jump Squats', set: 4 },
-  //     ]
-  //   },
-  // ]);
 
   const [userToken, setUserToken] = useState<string | null>(null);
 
@@ -84,6 +41,9 @@ export default function WorkoutScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [exerciseData, setExerciseData] = useState<{ [exerciseId: number]: { [setIndex: number]: { weight: string, reps: string } } }>({});
+
+  const [isLoading, setIsLoading] = useState(true);
+
 
 
   const handleAddWorkoutPress = () => {
@@ -229,7 +189,7 @@ export default function WorkoutScreen() {
   }
 
   const fetchWorkouts = async () => {
-
+    setIsLoading(true);
     console.log(userToken);
     try {
       const response = await fetch(`${API_URL}/workouts/user-workouts`, {
@@ -238,14 +198,12 @@ export default function WorkoutScreen() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${userToken}`
         }
-        //body: JSON.stringify({ exerciseData }),
       });
 
       const data = await response.json();
 
       console.log('Fetched data:', JSON.stringify(data, null, 2));
 
-      // Filter workouts to ensure unique names
       const uniqueWorkouts = data.filter(
         (workout, index, self) => index === self.findIndex((w) => w.name === workout.name)
       );
@@ -253,9 +211,10 @@ export default function WorkoutScreen() {
       setWorkouts(uniqueWorkouts);
     } catch (error) {
       console.error('Error fetching workouts:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
-
 
   // Dynamic cases
   const handleWorkoutPress = (workout: Workout) => {
@@ -297,23 +256,23 @@ export default function WorkoutScreen() {
       exerciseData: Object.values(exerciseData).map(exercise => {
         const weights = [];
         const reps = [];
-        
+
         Object.values(exercise).forEach(set => {
           weights.push(Number(set.weight));
           reps.push(Number(set.reps));
         });
-  
+
         return { weights, reps };
       })
     };
   };
-  
+
   const handleSave = async () => {
     // if (!areAllInputsFilled()) {
     //   alert('Please fill in all weight and rep fields before saving.');
     //   return;
     // }
-  
+
     if (selectedWorkout) {
       const workoutPayload = {
         name: selectedWorkout.name,
@@ -322,23 +281,23 @@ export default function WorkoutScreen() {
           sets: exercise.set,
         })),
       };
-  
+
       const workoutCompletionData = transformExerciseData(exerciseData);
-  
+
       console.log('workoutCompletionData before API call:', workoutCompletionData);
-  
+
       try {
         const response = await addWorkoutTemp(workoutPayload);
         console.log('Workout added successfully.', response);
         const workoutId = response.workout.id;
-  
+
         console.log("workoutCompletionData", workoutCompletionData);
         const completionResult = await completeWorkout(workoutId, workoutCompletionData);
         console.log("Workout completed successfully");
       } catch (error) {
         console.error('Error adding workout:', error);
       }
-  
+
       console.log('Workout Name:', selectedWorkout.name);
       selectedWorkout.exercises.forEach(exercise => {
         console.log('Exercise:', exercise.name);
@@ -350,7 +309,7 @@ export default function WorkoutScreen() {
     }
     setModalVisible(false); // Close the modal
   };
-  
+
   const AddWorkoutModal = ({ visible, onClose, onAdd }) => {
     const [workoutName, setWorkoutName] = useState('');
     const [exercises, setExercises] = useState([{ name: '', sets: 1 }]);
@@ -451,7 +410,7 @@ export default function WorkoutScreen() {
       </ThemedView>
 
       {/* Dynamic cases */}
-      <FlatList
+      {/* <FlatList
         data={workouts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
@@ -465,7 +424,29 @@ export default function WorkoutScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={() => <View style={styles.separator} />}
         ListFooterComponent={() => <View style={styles.separator} />}
-      ></FlatList>
+      ></FlatList> */}
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      ) : (
+        <FlatList
+          data={workouts}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => handleWorkoutPress(item)}>
+              <View style={styles.workoutContainer}>
+                <Text style={styles.workoutOptions}>{item.name}</Text>
+                <Ionicons name="caret-forward" size={16} color="gray" />
+              </View>
+            </TouchableOpacity>
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListHeaderComponent={() => <View style={styles.separator} />}
+          ListFooterComponent={() => <View style={styles.separator} />}
+        />
+      )}
 
       {/* Dynamic modal */}
 
@@ -697,5 +678,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -115,12 +115,15 @@ export default function FriendScreen() {
 
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
     const [users, setUsers] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchKeyword, setSearchKeyword] = useState('');
 
     const [isWorkoutModalVisible, setIsWorkoutModalVisible] = useState(false);
     const [selectedFriendWorkouts, setSelectedFriendWorkouts] = useState([]);
     const [allFriendWorkouts, setAllFriendWorkouts] = useState([]);
+    //const [isFriendsLoading, setIsFriendsLoading] = useState(true);
+
+
 
 
     useEffect(() => {
@@ -181,6 +184,7 @@ export default function FriendScreen() {
     };
 
     const fetchFriends = async () => {
+        setIsLoading(true);
         try {
             const userToken = await AsyncStorage.getItem('userToken');
             const response = await fetch(`${API_URL}/friends/get-friends`, {
@@ -190,15 +194,17 @@ export default function FriendScreen() {
                     'Authorization': `Bearer ${userToken}`
                 }
             });
-
+    
             if (!response.ok) {
                 throw new Error('Failed to fetch friends');
             }
-
+    
             const data = await response.json();
             setFriends(data.friends);
         } catch (error) {
             console.error('Error fetching friends:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -348,23 +354,27 @@ export default function FriendScreen() {
                 <ThemedText type="title">Friends</ThemedText>
             </ThemedView>
 
-            {friends.length > 0 ? (
-                <FlatList
-                    data={friends}
-                    renderItem={renderFriendItem}
-                    keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.friendList}
-                    extraData={isEditMode}
+            {isLoading ? (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
+            </View>
+        ) : friends.length > 0 ? (
+            <FlatList
+                data={friends}
+                renderItem={renderFriendItem}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.friendList}
+                extraData={isEditMode}
+            />
+        ) : (
+            <View style={styles.defaultContainer}>
+                <Image
+                    source={require('@/assets/images/training.png')}
+                    style={styles.defaultImage}
                 />
-            ) : (
-                <View style={styles.defaultContainer}>
-                    <Image
-                        source={require('@/assets/images/training.png')}
-                        style={styles.defaultImage}
-                    />
-                    <Text style={styles.defaultText}>Fitness is more fun with friends! Use the add button to cheer each other on and crush your goals together.</Text>
-                </View>
-            )}
+                <Text style={styles.defaultText}>Fitness is more fun with friends! Use the add button to cheer each other on and crush your goals together.</Text>
+            </View>
+        )}
 
             <Modal
                 visible={isAddModalVisible}
@@ -633,6 +643,12 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 10,
         paddingHorizontal: 10,
+    },
+
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 
     // friendItem: {
