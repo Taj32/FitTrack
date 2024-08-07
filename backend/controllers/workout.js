@@ -46,9 +46,22 @@ export const getUserWorkouts = async (req, res) => {
 
         res.json(formattedWorkouts);
     } catch (error) {
-        console.error('Error fetching user workouts:', error);
+        console.error('Error fetching all user workouts:', error);
         res.status(500).json({ message: 'Error fetching user workouts', error: error.message });
     }
+};
+
+export const getSpecificWorkout = async (req, res) => {
+    const userEmail = req.email;
+    const { workoutId } = req.params;
+
+    try {
+
+    } catch (error) {
+        console.error('Error fetching the user workout:', error);
+        res.status(500).json({ message: 'Error fetching the user workouts', error: error.message });
+    }
+
 };
 
 export const addWorkout = async (req, res) => {

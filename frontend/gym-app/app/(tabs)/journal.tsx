@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView } from 'react-native';
+import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 
 import { Collapsible } from '@/components/Collapsible';
 import { ExternalLink } from '@/components/ExternalLink';
@@ -30,6 +30,8 @@ const workoutLogs = [
 export default function JournalScreen() {
   const [workouts, setWorkouts] = useState([]);
   const [groupedWorkouts, setGroupedWorkouts] = useState({});
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedWorkout, setSelectedWorkout] = useState(null);
 
   useEffect(() => {
     fetchWorkouts();
@@ -38,6 +40,11 @@ export default function JournalScreen() {
   useEffect(() => {
     setGroupedWorkouts(groupWorkoutsByMonth(workouts));
   }, [workouts]);
+
+  const openWorkoutDetails = (workout) => {
+    setSelectedWorkout(workout);
+    setModalVisible(true);
+  };
 
   const fetchWorkouts = async () => {
     try {
@@ -67,6 +74,86 @@ export default function JournalScreen() {
     }
   };
 
+  const logWorkoutStructure = (workout) => {
+    console.log('Workout structure:', JSON.stringify(workout, null, 2));
+  };
+
+
+
+  const ExerciseDetails = ({ exercise }) => {
+    // Group the sets by exercise name
+    const groupedSets = exercise.sets.reduce((acc, set) => {
+      if (!acc[set.exercise_name]) {
+        acc[set.exercise_name] = [];
+      }
+      acc[set.exercise_name].push(set);
+      return acc;
+    }, {});
+  
+    return (
+      <View style={styles.exerciseDetails}>
+        {Object.entries(groupedSets).map(([exerciseName, sets], index) => (
+          <View key={index}>
+            <Text style={styles.exerciseTitle}>{exerciseName}</Text>
+            {sets.map((set, setIndex) => (
+              <Text key={setIndex} style={styles.setDetails}>
+                Set {setIndex + 1} - {set.weight || 'N/A'} lbs - {set.reps || 'N/A'} reps
+              </Text>
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const WorkoutDetailsModal = () => {
+    const groupExercises = (exercises) => {
+      return exercises.reduce((acc, exercise) => {
+        if (!acc[exercise.name]) {
+          acc[exercise.name] = [];
+        }
+        acc[exercise.name].push(exercise);
+        return acc;
+      }, {});
+    };
+  
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Ionicons name="close" size={24} color="black" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>{selectedWorkout?.name}</Text>
+            <ScrollView>
+              {selectedWorkout?.exercises && selectedWorkout.exercises.length > 0 ? (
+                Object.entries(groupExercises(selectedWorkout.exercises)).map(([exerciseName, sets], index) => (
+                  <View key={index} style={styles.exerciseDetails}>
+                    <Text style={styles.exerciseTitle}>{exerciseName}</Text>
+                    {sets.map((set, setIndex) => (
+                      <Text key={setIndex} style={styles.setDetails}>
+                        Set {setIndex + 1} - {set.weight || 'N/A'} lbs - {set.reps || 'N/A'} reps
+                      </Text>
+                    ))}
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noExercisesText}>No exercises recorded for this workout.</Text>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
   const groupExercises = (exercises) => {
     const grouped = [];
     let currentExercise = null;
@@ -158,31 +245,34 @@ export default function JournalScreen() {
             </View>
 
             {monthWorkouts.map((workout, index) => (
-              <View key={index} style={styles.workoutLog}>
-                <DateWidget
-                  day={formatDay(workout.date_created)}
-                  dateDigit={formatDateDigit(workout.date_created)}
-                />
-                <View style={styles.workoutInfo}>
-                  <Text style={styles.workoutName}>{workout.name}</Text>
-                  {workout.exercises && workout.exercises.length > 0 ? (
-                    groupExercises(workout.exercises).map((exercise, exIndex) => (
-                      <Text key={exIndex} style={styles.exerciseName}>
-                        {`${exercise.sets}x ${exercise.name}`}
-                      </Text>
-                    ))
-                  ) : (
-                    <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
-                  )}
-                  <Text></Text>
+              <TouchableOpacity key={index} onPress={() => openWorkoutDetails(workout)}>
+                <View key={index} style={styles.workoutLog}>
+                  <DateWidget
+                    day={formatDay(workout.date_created)}
+                    dateDigit={formatDateDigit(workout.date_created)}
+                  />
+                  <View style={styles.workoutInfo}>
+                    <Text style={styles.workoutName}>{workout.name}</Text>
+                    {workout.exercises && workout.exercises.length > 0 ? (
+                      groupExercises(workout.exercises).map((exercise, exIndex) => (
+                        <Text key={exIndex} style={styles.exerciseName}>
+                          {`${exercise.sets}x ${exercise.name}`}
+                        </Text>
+                      ))
+                    ) : (
+                      <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
+                    )}
+                    <Text></Text>
+                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
+
             ))}
           </View>
         ))}
 
       </ScrollView>
-
+      <WorkoutDetailsModal />
     </SafeAreaView>
   );
 }
@@ -244,8 +334,6 @@ const styles = StyleSheet.create({
 
     marginVertical: 10,
     marginHorizontal: 15,
-
-
     borderRadius: 30,
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -271,4 +359,56 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: 'gray',
   },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  noExercisesText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    color: 'gray',
+  },
+  exerciseDetails: {
+    marginBottom: 20,
+  },
+  exerciseTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  setDetails: {
+    fontSize: 16,
+    marginLeft: 10,
+  },
+  
+  
 });
