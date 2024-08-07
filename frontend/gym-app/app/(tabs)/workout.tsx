@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
+
 export default function WorkoutScreen() {
 
   interface ExerciseData {
@@ -125,6 +126,75 @@ export default function WorkoutScreen() {
     }
   };
 
+  const addWorkout = async (workoutName: string, exercises: { name: string, sets: number }[]) => {
+    if (!userToken) {
+      console.error('User token is not available.');
+      return null;
+    }
+
+    try {
+      const response = await fetch('http://192.168.1.205:5000/workouts/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          name: workoutName,
+          exercises: exercises
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add workout');
+      }
+
+      const result = await response.json();
+      console.log('Workout added successfully:', result);
+      console.log(result.workout.id);
+      return result.workout.id; // Assuming the API returns the workout ID
+    } catch (error) {
+      console.error('Error adding workout:', error);
+      return null;
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedWorkout(null);
+    setExerciseData([]);
+  };
+
+  const completeWorkout = async (workoutId: number, exerciseData: Array<{
+    weights: number[],
+    reps: number[]
+  }>) => {
+    if (!userToken) {
+      console.error('User token is not available.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://192.168.1.205:5000/workouts/complete/${workoutId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ exerciseData }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to complete workout');
+      }
+
+      const result = await response.json();
+      console.log('Workout completed successfully:', result);
+    } catch (error) {
+      console.error('Error completing workout:', error);
+    }
+  };
+
 
 
   const handleWorkoutSelect = (workout: Workout) => {
@@ -141,58 +211,38 @@ export default function WorkoutScreen() {
       return;
     }
 
-    const currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+    // Prepare exercises data for adding workout
+    const exercisesForAdd = selectedWorkout.exercises.map(exercise => ({
+      name: exercise.name,
+      sets: exercise.set
+    }));
 
-    for (let i = 0; i < selectedWorkout.exercises.length; i++) {
-      const exercise = selectedWorkout.exercises[i];
-      for (let j = 0; j < exerciseData[i].logs.length; j++) {
-        const log = exerciseData[i].logs[j];
-        if (log.reps && log.weight) {
-          await addExerciseToDatabase({
-            exercise_name: exercise.name,
-            weight: parseFloat(log.weight),
-            reps: parseInt(log.reps),
-            sets: 1, // Each log entry represents one set
-            date: currentDate,
-          });
+    // Add the workout first
+    const workoutId = await addWorkout(selectedWorkout.name, exercisesForAdd);
+    if (!workoutId) {
+      console.error('Failed to create workout');
+      return;
+    }
+
+    // Prepare exercise data for completing workout
+    const exerciseDataForComplete = selectedWorkout.exercises.map((exercise, index) => {
+      const weights = [];
+      const reps = [];
+      for (let i = 0; i < exercise.set; i++) {
+        const log = exerciseData[index].logs[i];
+        if (log.weight && log.reps) {
+          weights.push(parseFloat(log.weight));
+          reps.push(parseInt(log.reps));
         }
       }
-    }
-    
-    let fileContent = `Saved workout: ${selectedWorkout.name}\n\n`;
-    console.log('Saved workout:', selectedWorkout.name);
-    
-    selectedWorkout.exercises.forEach((exercise, index) => {
-      console.log(`\nExercise: ${exercise.name}`);
-      console.log('Set\tReps\t\tWeight');
-      exerciseData[index].logs.forEach((log, setIndex) => {
-        console.log(`${setIndex + 1}\t\t${log.reps}\t\t${log.weight}`);
-      });
+      return { weights, reps };
     });
 
-    selectedWorkout.exercises.forEach((exercise, index) => {
-      fileContent += `Exercise: ${exercise.name}\n`;
-      fileContent += 'Set\tReps\tWeight\n';
-      exerciseData[index].logs.forEach((log, setIndex) => {
-        fileContent += `${setIndex + 1}\t${log.reps}\t${log.weight}\n`;
-      });
-      fileContent += '\n';
-    });
-  
-    const fileName = `workout_${selectedWorkout.id}_${Date.now()}.txt`;
-    const filePath = `${FileSystem.documentDirectory}${fileName}`;
-  
-    try {
-      await FileSystem.writeAsStringAsync(filePath, fileContent);
-      console.log(`Workout saved to ${filePath}`);
-      
-      // Optional: Read the file back to verify
-      const savedContent = await FileSystem.readAsStringAsync(filePath);
-      console.log('Saved workout data:', savedContent);
-    } catch (error) {
-      console.error('Error saving workout:', error);
-    }
-  
+    // Complete the workout with all exercise data
+    await completeWorkout(workoutId, exerciseDataForComplete);
+
+    // ... (rest of the function for saving to file system)
+
     setShowModal(false);
   };
 
@@ -276,9 +326,16 @@ export default function WorkoutScreen() {
         ListFooterComponent={() => <View style={styles.separator} />}
       />
 
-      <Modal visible={showModal} animationType="none" >
+      <Modal visible={showModal} animationType="none">
         <ThemedView style={styles.modalContainer}>
-          <ThemedText type="title">{selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}</ThemedText>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={handleCloseModal} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <ThemedText type="title" style={styles.modalTitle}>
+              {selectedWorkout ? selectedWorkout.name : 'No Workout Selected'}
+            </ThemedText>
+          </View>
           <FlatList
             data={selectedWorkout ? selectedWorkout.exercises : []}
             renderItem={renderExerciseItem}
@@ -388,6 +445,19 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     textAlign: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backButton: {
+    padding: 8,
+  },
+  modalTitle: {
+    flex: 1,
+    textAlign: 'center',
+    marginRight: 40,  // to offset the back button and center the title
   },
 
 });

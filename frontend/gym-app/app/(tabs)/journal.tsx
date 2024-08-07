@@ -8,7 +8,8 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { DateWidget } from '@/components/DateWidget';
 import { NavigationContainer } from '@react-navigation/native';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, isSameMonth } from 'date-fns';
+
 
 
 import { useState, useEffect } from 'react';
@@ -28,10 +29,15 @@ const workoutLogs = [
 
 export default function JournalScreen() {
   const [workouts, setWorkouts] = useState([]);
+  const [groupedWorkouts, setGroupedWorkouts] = useState({});
 
   useEffect(() => {
     fetchWorkouts();
   }, []);
+
+  useEffect(() => {
+    setGroupedWorkouts(groupWorkoutsByMonth(workouts));
+  }, [workouts]);
 
   const fetchWorkouts = async () => {
     try {
@@ -93,14 +99,33 @@ export default function JournalScreen() {
     console.log('Formatted day:', formattedDay);
     return formattedDay;
   };
-  
+
   const formatDateDigit = (dateString) => {
     const date = parseISO(dateString);
     const dateDigit = format(date, 'd');
     console.log('Formatted date digit:', dateDigit);
     return dateDigit;
   };
-  
+
+
+  const groupWorkoutsByMonth = (workouts) => {
+    const grouped = {};
+    workouts.forEach(workout => {
+      const date = parseISO(workout.date_created);
+      const monthKey = format(date, 'MMMM yyyy');
+      if (!grouped[monthKey]) {
+        grouped[monthKey] = [];
+      }
+      grouped[monthKey].push(workout);
+    });
+    return grouped;
+  };
+
+  const formatMonthYear = (dateString) => {
+    const date = parseISO(dateString);
+    return format(date, 'MMMM yyyy');
+  };
+
 
 
   return (
@@ -125,44 +150,36 @@ export default function JournalScreen() {
           {/* <Ionicons name="fitness" size={50} color="black" /> */}
         </ThemedView>
 
-        <View style={styles.subtitleContainer}>
-          <Text style={styles.monthSubText}>June 2024</Text>
-          <Text style={styles.workoutNumberSubText}>{workoutLogs.length} workouts</Text>
-          {/* <Ionicons name="caret-forward" size={16} color="gray" /> */}
-        </View>
-
-        {/* <View style={styles.workoutLog}>
-          <DateWidget day={'Wed'} dateDigit={'9'}></DateWidget>
-          <View style={styles.workoutInfo}>
-            <Text style={styles.workoutName}>Evening Workout</Text>
-            <Text style={styles.exerciseName}>1x assisted dips</Text>
-            <Text style={styles.exerciseName}>1x assisted dips</Text>
-            <Text style={styles.exerciseName}>1x assisted dips</Text>
-            <Text style={styles.exerciseName}>1x assisted dips</Text>
-            <Text style={styles.exerciseName}>1x assisted dips</Text>
-            <Text></Text>
-          </View>
-        </View> */}
-
-        {/* workout logs */}
-        {workouts.map((workout, index) => (
-          <View key={index} style={styles.workoutLog}>
-            <DateWidget
-              day={formatDay(workout.date_created)}
-              dateDigit={formatDateDigit(workout.date_created)}
-            />
-            <View style={styles.workoutInfo}>
-              <Text style={styles.workoutName}>{workout.name}</Text>
-              {groupExercises(workout.exercises).map((exercise, exIndex) => (
-                <Text key={exIndex} style={styles.exerciseName}>
-                  {`${exercise.sets}x ${exercise.name}`}
-                </Text>
-              ))}
-              <Text></Text>
+        {Object.entries(groupedWorkouts).map(([monthYear, monthWorkouts]) => (
+          <View key={monthYear}>
+            <View style={styles.subtitleContainer}>
+              <Text style={styles.monthSubText}>{monthYear}</Text>
+              <Text style={styles.workoutNumberSubText}>{monthWorkouts.length} workouts</Text>
             </View>
+
+            {monthWorkouts.map((workout, index) => (
+              <View key={index} style={styles.workoutLog}>
+                <DateWidget
+                  day={formatDay(workout.date_created)}
+                  dateDigit={formatDateDigit(workout.date_created)}
+                />
+                <View style={styles.workoutInfo}>
+                  <Text style={styles.workoutName}>{workout.name}</Text>
+                  {workout.exercises && workout.exercises.length > 0 ? (
+                    groupExercises(workout.exercises).map((exercise, exIndex) => (
+                      <Text key={exIndex} style={styles.exerciseName}>
+                        {`${exercise.sets}x ${exercise.name}`}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
+                  )}
+                  <Text></Text>
+                </View>
+              </View>
+            ))}
           </View>
         ))}
-
 
       </ScrollView>
 
@@ -247,5 +264,11 @@ const styles = StyleSheet.create({
   exerciseName: {
     paddingTop: 5,
     fontSize: 15,
-  }
+  },
+  incompleteWorkout: {
+    paddingTop: 5,
+    fontSize: 15,
+    fontStyle: 'italic',
+    color: 'gray',
+  },
 });
