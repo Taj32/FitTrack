@@ -77,6 +77,11 @@ export default function WorkoutScreen() {
   const [showModal, setShowModal] = useState(false);
   const [exerciseData, setExerciseData] = useState<ExerciseData[]>([]);
   const [userToken, setUserToken] = useState<string | null>(null);
+  const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false);
+
+  const handleAddWorkoutPress = () => {
+    setShowAddWorkoutModal(true);
+  };
 
   useEffect(() => {
     const getToken = async () => {
@@ -296,6 +301,72 @@ export default function WorkoutScreen() {
   );
 
 
+  function handleModalToggle(): ((event: import("react-native").GestureResponderEvent) => void) | undefined {
+    throw new Error('Function not implemented.');
+  }
+
+  const AddWorkoutModal = ({ visible, onClose, onAdd }) => {
+    const [workoutName, setWorkoutName] = useState('');
+    const [exercises, setExercises] = useState([{ name: '', sets: 1 }]);
+
+    const addExercise = () => {
+      setExercises([...exercises, { name: '', sets: 1 }]);
+    };
+
+    const handleExerciseChange = (index, field, value) => {
+      const newExercises = [...exercises];
+      newExercises[index][field] = value;
+      setExercises(newExercises);
+    };
+
+    const handleSubmit = () => {
+      onAdd(workoutName, exercises);
+      setWorkoutName('');
+      setExercises([{ name: '', sets: 1 }]);
+      onClose();
+    };
+
+    return (
+      <Modal visible={visible} animationType="slide">
+        <ThemedView style={styles.modalContainer}>
+          <ThemedText type="title">Add New Workout</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="Workout Name"
+            value={workoutName}
+            onChangeText={setWorkoutName}
+          />
+          {exercises.map((exercise, index) => (
+            <View key={index} style={styles.exerciseInput}>
+              <TextInput
+                style={styles.input}
+                placeholder="Exercise Name"
+                value={exercise.name}
+                onChangeText={(text) => handleExerciseChange(index, 'name', text)}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Sets"
+                value={exercise.sets.toString()}
+                onChangeText={(text) => handleExerciseChange(index, 'sets', parseInt(text) || 0)}
+                keyboardType="numeric"
+              />
+            </View>
+          ))}
+          <TouchableOpacity style={styles.addButton} onPress={addExercise}>
+            <ThemedText>Add Exercise</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
+            <ThemedText>Save Workout</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+            <ThemedText>Cancel</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+      </Modal>
+    );
+  };
+
   return (
 
     <SafeAreaView style={styles.container}>
@@ -308,9 +379,22 @@ export default function WorkoutScreen() {
           size={24}
           color='#007AFF'
           style={{ marginRight: 16 }}
-          onPress={() => alert('"+" pressed')}
+          onPress={handleAddWorkoutPress}
         />
       </ThemedView>
+
+      <AddWorkoutModal
+        visible={showAddWorkoutModal}
+        onClose={() => setShowAddWorkoutModal(false)}
+        onAdd={async (name, exercises) => {
+          const workoutId = await addWorkout(name, exercises);
+          if (workoutId) {
+            // Refresh workouts list here
+            // You might want to fetch the updated list from the server
+            // or add the new workout to the existing list
+          }
+        }}
+      />
 
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title" >Start Workout</ThemedText>
@@ -458,6 +542,31 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     marginRight: 40,  // to offset the back button and center the title
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+  },
+  exerciseInput: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#FF3B30',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
   },
 
 });
