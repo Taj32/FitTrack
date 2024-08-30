@@ -1,7 +1,7 @@
 import express from 'express';
 import sequelize from './utils/database.js';
-import authRouter from './routes/routes.js';  // Rename this import to be more specific
-import exerciseRouter from './routes/exerciseRoutes.js';  // Add this new import
+import authRouter from './routes/routes.js';
+import exerciseRouter from './routes/exerciseRoutes.js';
 import workoutRouter from './routes/workoutRoutes.js';
 import friendRouter from './routes/friendRoutes.js';
 
@@ -17,14 +17,11 @@ app.use((_, res, next) => {
     next();
 });
 
-// Use separate routers for the different route.js files
-app.use('/auth', authRouter);  // Assuming your current routes are auth-related
-app.use('/exercises', exerciseRouter);  // New exercise routes
+app.use('/auth', authRouter);
+app.use('/exercises', exerciseRouter);
 app.use('/workouts', workoutRouter);  
 app.use('/friends', friendRouter);
 
-
-// Error handling middleware
 app.use((error, req, res, next) => {
     console.log(error);
     const status = error.statusCode || 500;
@@ -32,7 +29,11 @@ app.use((error, req, res, next) => {
     res.status(status).json({ message: message });
 });
 
-sequelize.sync()
+sequelize.authenticate()
+    .then(() => {
+        console.log('Connection to database has been established successfully.');
+        return sequelize.sync();
+    })
     .then(() => {
         console.log('Database synced successfully');
         app.listen(5000, () => {
@@ -40,5 +41,5 @@ sequelize.sync()
         });
     })
     .catch(err => {
-        console.error('Unable to sync database:', err);
+        console.error('Unable to connect to the database:', err);
     });

@@ -1,4 +1,3 @@
-// models/exercise.js
 import { DataTypes } from 'sequelize';
 import sequelize from '../utils/database.js';
 
@@ -31,14 +30,14 @@ const Exercise = sequelize.define('Exercise', {
   },
   userId: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true
   },
-  // Add this field if it doesn't exist
   workout_id: {
     type: DataTypes.INTEGER,
-    allowNull: true // Set to false if it's a required field
+    allowNull: true
   }
 }, {
+  tableName: 'exercises',
   timestamps: false
 });
 

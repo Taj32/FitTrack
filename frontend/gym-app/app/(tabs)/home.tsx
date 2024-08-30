@@ -99,8 +99,17 @@ const fetchWorkouts = async () => {
             }
         });
 
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        console.log('Fetched data:', JSON.stringify(data, null, 2));
+        console.log('Raw API response:', JSON.stringify(data, null, 2));
+
+        if (!Array.isArray(data)) {
+            console.error('API response is not an array:', data);
+            return;
+        }
 
         const workoutDates = data.map((workout: any) => workout.date_created as string);
         const uniqueSortedDates = [...new Set(workoutDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
@@ -116,8 +125,11 @@ const fetchWorkouts = async () => {
 };
 
 const fetchRecentWorkouts = async () => {
+
     try {
+        
         const token = await AsyncStorage.getItem('userToken');
+        console.log("token: ", token );
         const response = await fetch(`${API_URL}/exercises/recent`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -126,6 +138,7 @@ const fetchRecentWorkouts = async () => {
         if (!response.ok) {
             throw new Error('Failed to fetch recent workouts');
         }
+
         const data = await response.json();
         setRecentWorkouts(data);
     } catch (error) {

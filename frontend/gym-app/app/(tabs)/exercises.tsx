@@ -76,24 +76,47 @@ const App = () => {
   const fetchExerciseData = async (exerciseName) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch(`${API_URL}/exercises/get?exercise_name=${exerciseName}`, {
+      console.log('Token:', token);
+  
+      const url = `${API_URL}/exercises/get?exercise_name=${encodeURIComponent(exerciseName)}`;
+      console.log('Fetching from URL:', url);
+  
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
+  
+      console.log('Response status:', response.status);
+      console.log('Response headers:', JSON.stringify(response.headers));
+  
+      const responseData = await response.json();
+  
       if (!response.ok) {
-        throw new Error('Failed to fetch exercise data');
+        console.error('Error response body:', JSON.stringify(responseData));
+        throw new Error(`HTTP error! status: ${response.status}, message: ${responseData.message}`);
       }
-      const data = await response.json();
-      return data.map(item => ({
-        value: item.weight,
+  
+      console.log('Received data:', JSON.stringify(responseData));
+  
+      if (!Array.isArray(responseData) || responseData.length === 0) {
+        console.log('No exercise data found');
+        return [];
+      }
+  
+      return responseData.map(item => ({
+        value: parseFloat(item.weight),
         label: new Date(item.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
       }));
     } catch (error) {
-      console.error('Error fetching exercise data:', error);
+      console.error('Error in fetchExerciseData:', error);
+      Alert.alert('Error', 'Failed to fetch exercise data. Please try again later.');
       return [];
     }
   };
+
 
   const getExerciseStats = (data) => {
     if (!data || data.length === 0) {

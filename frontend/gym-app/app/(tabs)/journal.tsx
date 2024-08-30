@@ -22,11 +22,11 @@ const API_URL = 'http://192.168.1.205:5000';
 
 
 export default function JournalScreen() {
+
   const [workouts, setWorkouts] = useState([]);
   const [groupedWorkouts, setGroupedWorkouts] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
-
   const [isEditMode, setIsEditMode] = useState(false);
   const [animatedValues, setAnimatedValues] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -136,14 +136,14 @@ export default function JournalScreen() {
 
   const fetchWorkouts = async () => {
     setIsLoading(true);
-
+  
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
         console.log('No token found');
         return;
       }
-
+  
       const response = await fetch(`${API_URL}/workouts/user-workouts`, {
         method: 'GET',
         headers: {
@@ -151,19 +151,16 @@ export default function JournalScreen() {
           'Content-Type': 'application/json',
         },
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to fetch workouts');
       }
-
+  
       const data = await response.json();
-      console.log("data ---", data);
-
-      const filteredData = data.filter(workout =>
-        !workout.exercises.some(exercise => exercise.weight === -1)
-      );
-      setWorkouts(filteredData);
-
+      console.log("Fetched workouts data:", data);
+  
+      setWorkouts(data);
+  
     } catch (error) {
       console.error('Error fetching workouts:', error);
     } finally {
@@ -181,7 +178,7 @@ export default function JournalScreen() {
         return acc;
       }, {});
     };
-
+  
     return (
       <Modal
         animationType="slide"
@@ -198,16 +195,21 @@ export default function JournalScreen() {
               <Ionicons name="close" size={24} color="black" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>{selectedWorkout?.name}</Text>
-            <ScrollView>
+
+            <ScrollView style={styles.scrollView}>
               {selectedWorkout?.exercises && selectedWorkout.exercises.length > 0 ? (
                 Object.entries(groupExercises(selectedWorkout.exercises)).map(([exerciseName, sets], index) => (
                   <View key={index} style={styles.exerciseDetails}>
                     <Text style={styles.exerciseTitle}>{exerciseName}</Text>
-                    {sets.map((set, setIndex) => (
-                      <Text key={setIndex} style={styles.setDetails}>
-                        Set {setIndex + 1} - {set.weight || 'N/A'} lbs - {set.reps || 'N/A'} reps
-                      </Text>
-                    ))}
+                    <View style={styles.setsContainer}>
+                      {sets.map((set, setIndex) => (
+                        <View key={setIndex} style={styles.setDetails}>
+                          <Text style={styles.setText}>
+                            Set {setIndex + 1}: {set.weight} lbs - {set.reps} reps
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 ))
               ) : (
@@ -498,19 +500,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: 'gray',
   },
-  exerciseDetails: {
-    marginBottom: 20,
-  },
-  exerciseTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    paddingBottom: 10,
-    marginBottom: 5,
-  },
-  setDetails: {
-    fontSize: 16,
-    marginLeft: 10,
-  },
   workoutLogContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -546,6 +535,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  exerciseDetails: {
+    marginLeft: 10,
+    marginBottom: 20,
+    width: '100%',
+  },
+  exerciseTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  setsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
+  setDetails: {
+    marginRight: 10,
+    marginBottom: 5,
+  },
+  setText: {
+    fontSize: 14,
+  },
+
 
 
 });

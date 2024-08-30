@@ -12,68 +12,68 @@ export const getUserWorkouts = async (req, res) => {
     const userEmail = req.email;
 
     try {
+        console.log('Fetching workouts for user:', userEmail);
+
         const user = await User.findOne({ where: { email: userEmail } });
         if (!user) {
+            console.log('User not found for email:', userEmail);
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const workouts = await Workout.findAll({
-            where: { user_id: user.id },
-            order: [['date_created', 'DESC']],
-            include: [{
-                model: Exercise,
-                attributes: ['exercise_name', 'weight', 'reps', 'sets', 'date'],
-                order: [['date', 'DESC']]
-            }]
-        });
+        console.log('User found:', user.id);
 
-        console.log("RAW", JSON.stringify(workouts, null, 2)); // Log raw workout data
+        try {
+            const workouts = await Workout.findAll({
+                where: { user_id: user.id },
+                include: [{
+                    model: Exercise,
+                    as: 'Exercises', // Correct alias
+                    attributes: ['id', 'exercise_name', 'weight', 'reps', 'sets', 'date']
+                }],
+                order: [['date_created', 'DESC']]
+            });
 
-        // // Add logging for empty Exercises arrays
-        // workouts.forEach(workout => {
-        //     if (workout.Exercises.length === 0) {
-        //         console.log(`LOG: "Exercises" array is empty for workout ID ${workout.id}`);
-        //     }
-        // });
+            console.log('Workouts fetched:', workouts.length);
 
-        // Populate empty Exercises arrays
-        workouts.forEach(workout => {
-            if (workout.Exercises.length === 0 && workout.exercises) {
-                workout.Exercises = workout.exercises.flatMap(exercise => {
-                    return Array(exercise.sets).fill({
-                        exercise_name: exercise.name,
-                        weight: -1,
-                        reps: -1,
-                        sets: 1,
-                        date: workout.date_created
-                    });
-                });
-                console.log(`Populated "Exercises" array for workout ID ${workout.id}`);
+            // Transform the data into the required format
+            const formattedWorkouts = workouts.map(workout => ({
+                id: workout.id,
+                name: workout.name,
+                date_created: workout.date_created,
+                user_id: workout.user_id,
+                exercises: workout.Exercises?.map(exercise => ({ // Ensure this is always an array
+                    id: exercise.id,
+                    name: exercise.exercise_name,
+                    weight: exercise.weight,
+                    reps: exercise.reps,
+                    sets: exercise.sets,
+                    date: exercise.date
+                })) || [] // Default to an empty array if null/undefined
+            }));
+
+            res.json(formattedWorkouts);
+        } catch (workoutError) {
+            console.error('Error fetching workouts:', workoutError);
+
+            if (workoutError.parent && workoutError.parent.errors) {
+                console.error('Detailed errors:', workoutError.parent.errors);
             }
-        });
 
+            throw workoutError;
+        }
 
-        // Format the response
-        const formattedWorkouts = workouts.map(workout => ({
-            id: workout.id,
-            name: workout.name,
-            date_created: workout.date_created,
-            user_id: workout.user_id,
-            exercises: workout.Exercises.map(exercise => ({
-                name: exercise.exercise_name,
-                weight: exercise.weight,
-                reps: exercise.reps,
-                sets: exercise.sets,
-                date: exercise.date
-            }))
-        }));
-
-        res.json(formattedWorkouts);
     } catch (error) {
-        console.error('Error fetching all user workouts:', error);
-        res.status(500).json({ message: 'Error fetching user workouts', error: error.message });
+        console.error('Error in getUserWorkouts:', error);
+        res.status(500).json({
+            message: 'Error fetching user workouts',
+            error: error.message,
+            stack: error.stack,
+            details: error.parent ? error.parent.message : 'No additional details'
+        });
     }
 };
+
+
 
 export const getSpecificWorkout = async (req, res) => {
     const userEmail = req.email;

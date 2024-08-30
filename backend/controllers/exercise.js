@@ -102,15 +102,17 @@ function formatDate(dateString) {
     return date.toISOString().split('T')[0]; // Format as 'YYYY-MM-DD'
 }
 
-
-
 export const getExercise = async (req, res) => {
     const userEmail = req.email;
     const { exercise_name, start_date, end_date } = req.query;
 
     try {
+        console.log('Fetching exercise for user:', userEmail);
+        console.log('Query params:', { exercise_name, start_date, end_date });
+
         const user = await User.findOne({ where: { email: userEmail } });
         if (!user) {
+            console.log('User not found for email:', userEmail);
             return res.status(404).json({ message: 'User not found' });
         }
 
@@ -124,14 +126,38 @@ export const getExercise = async (req, res) => {
             };
         }
 
+        console.log('Where clause:', JSON.stringify(whereClause));
+
         const exercises = await Exercise.findAll({
             where: whereClause,
             order: [['date', 'ASC']]
         });
 
+        console.log('Exercises found:', exercises.length);
+        if (exercises.length > 0) {
+            console.log('Sample exercise:', JSON.stringify(exercises[0].toJSON()));
+        } else {
+            console.log('No exercises found');
+        }
+
         res.json(exercises);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching exercises', error: error.message });
+        console.error('Error in getExercise:');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        if (error.sql) {
+            console.error('SQL Query:', error.sql);
+        }
+        if (error.parameters) {
+            console.error('Parameters:', error.parameters);
+        }
+        console.error('Stack trace:', error.stack);
+        
+        res.status(500).json({ 
+            message: 'Error fetching exercises', 
+            error: error.message,
+            stack: error.stack 
+        });
     }
 };
 
