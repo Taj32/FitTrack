@@ -8,6 +8,16 @@ import { Op } from 'sequelize';
 // import Workout from '../models/workout.js';
 // import Exercise from '../models/exercise.js';
 
+function formatDate(date) {
+    if (!(date instanceof Date)) {
+        date = new Date(date);
+    }
+    if (isNaN(date.getTime())) {
+        return null; // Return null for invalid dates
+    }
+    return date.toISOString().split('T')[0]; // Format as 'YYYY-MM-DD'
+}
+
 export const getUserWorkouts = async (req, res) => {
     const userEmail = req.email;
 
@@ -47,7 +57,7 @@ export const getUserWorkouts = async (req, res) => {
                     weight: exercise.weight,
                     reps: exercise.reps,
                     sets: exercise.sets,
-                    date: exercise.date
+                    date: formatDate(exercise.date)
                 })) || [] // Default to an empty array if null/undefined
             }));
 
@@ -106,9 +116,9 @@ export const addWorkout = async (req, res) => {
         console.log('Creating workout...');
         const workout = await Workout.create({
             name,
-            date_created: new Date(),
+            date_created: formatDate(new Date()),
             user_id: user.id,
-            exercises: req.body.exercises
+            exercises:  JSON.stringify(req.body.exercises)
         });
         console.log('Created workout:', workout.toJSON());
 
@@ -197,24 +207,31 @@ export const completeWorkout = async (req, res) => {
             return res.status(404).json({ message: 'Workout not found or not owned by user' });
         }
 
+        // Parse the workout.exercises string back into an array
+        console.log("this is what workout.exercises looks like: ", workout.exercises);
+        console.log("this is what exerciseData looks like: ", exerciseData);
+        const exercises = JSON.parse(workout.exercises);
+
         const exercisesToCreate = [];
 
-        workout.exercises.forEach((exercise, index) => {
+        exercises.forEach((exercise, index) => {
             const exerciseInfo = exerciseData[index];
             for (let i = 0; i < exercise.sets; i++) {
+                // Assuming weights[i] and reps[i] match the number of sets
+                const weight = exerciseInfo.weights[i] || exerciseInfo.weights[0]; // Default to first if out of range
+                const rep = exerciseInfo.reps[i] || exerciseInfo.reps[0]; // Default to first if out of range
+
                 exercisesToCreate.push({
                     exercise_name: exercise.name,
-                    weight: exerciseInfo.weights[i],
-                    reps: exerciseInfo.reps[i],
+                    weight: weight,
+                    reps: rep,
                     sets: 1, // Each entry represents one set
                     date: new Date(),
                     userId: user.id,
-                    workout_id: workout.id  // Add this line to associate with the workout
-
+                    workout_id: workout.id  // Associate with the workout
                 });
             }
         });
-
         const createdExercises = await Exercise.bulkCreate(exercisesToCreate);
 
         res.status(200).json({ 
@@ -307,7 +324,7 @@ export const getFriendsRecentWorkouts = async (req, res) => {
         const formattedWorkouts = recentWorkouts.map(workout => ({
             id: workout.id,
             name: workout.name,
-            date_created: workout.date_created,
+            date_created: formatDate(workout.date_created),
             user_id: workout.user_id,
             user: workout.User ? {
                 id: workout.User.id,
@@ -319,7 +336,7 @@ export const getFriendsRecentWorkouts = async (req, res) => {
                 weight: exercise.weight,
                 reps: exercise.reps,
                 sets: exercise.sets,
-                date: exercise.date
+                date: formatDate(exercise.date)
             })) : []
         }));
 

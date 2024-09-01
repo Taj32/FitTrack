@@ -155,11 +155,21 @@ export default function JournalScreen() {
       if (!response.ok) {
         throw new Error('Failed to fetch workouts');
       }
-  
+
+
       const data = await response.json();
       console.log("Fetched workouts data:", data);
   
-      setWorkouts(data);
+      // Filter out dummy workouts
+      const filteredWorkouts = data.filter(workout => {
+        return workout.exercises.every(exercise => 
+          exercise.weight > 0 && exercise.reps > 0
+        );
+      });
+
+      console.log("Fetch filtered workouts: ", filteredWorkouts);
+  
+      setWorkouts(filteredWorkouts);
   
     } catch (error) {
       console.error('Error fetching workouts:', error);

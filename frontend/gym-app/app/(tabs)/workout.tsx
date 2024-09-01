@@ -77,12 +77,23 @@ export default function WorkoutScreen() {
 
   const addWorkoutTemp = async (payload: { name: string; exercises: { name: string; sets: number; }[]; }) => {
     try {
-      console.log('Sending workout data:', JSON.stringify(payload));
+
+      const formattedPayload = {
+        name: payload.name,
+        exercises: payload.exercises.map(exercise => ({
+          name: exercise.name,
+          sets: exercise.sets
+        }))
+      };
+
+      console.log('Sending workout data:', JSON.stringify(formattedPayload));
       console.log('User token:', userToken);
 
       if (!userToken) {
         throw new Error('User token is missing');
       }
+
+      
 
       const response = await fetch(`${API_URL}/workouts/add`, {
         method: 'POST',
@@ -90,7 +101,7 @@ export default function WorkoutScreen() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${userToken}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(formattedPayload)
       });
 
       console.log('Response status:', response.status);
@@ -107,12 +118,12 @@ export default function WorkoutScreen() {
 
       return JSON.parse(responseText);
     } catch (error) {
-      console.error('Error adding workout:', error);
+      console.error('Error adding workout [addWorkoutTemp]:', error);
       throw error;
     }
   };
 
-
+//For the initally created workouts --> dummy workout
   const addWorkout = async (workoutName: string, exercises: { name: string; sets: number }[]) => {
     try {
       const workoutData = {
@@ -254,14 +265,8 @@ export default function WorkoutScreen() {
   const transformExerciseData = (exerciseData) => {
     return {
       exerciseData: Object.values(exerciseData).map(exercise => {
-        const weights = [];
-        const reps = [];
-
-        Object.values(exercise).forEach(set => {
-          weights.push(Number(set.weight));
-          reps.push(Number(set.reps));
-        });
-
+        const weights = Object.values(exercise).map(set => Number(set.weight));
+        const reps = Object.values(exercise).map(set => Number(set.reps));
         return { weights, reps };
       })
     };
@@ -295,7 +300,7 @@ export default function WorkoutScreen() {
         const completionResult = await completeWorkout(workoutId, workoutCompletionData);
         console.log("Workout completed successfully");
       } catch (error) {
-        console.error('Error adding workout:', error);
+        console.error('Error adding workout [handleSave]:', error);
       }
 
       console.log('Workout Name:', selectedWorkout.name);
@@ -317,18 +322,72 @@ export default function WorkoutScreen() {
     const addExercise = () => {
       setExercises([...exercises, { name: '', sets: 1 }]);
     };
-
+  
     const handleExerciseChange = (index, field, value) => {
       const newExercises = [...exercises];
       newExercises[index][field] = value;
       setExercises(newExercises);
     };
 
-    const handleSubmit = () => {
-      onAdd(workoutName, exercises);
-      setWorkoutName('');
-      setExercises([{ name: '', sets: 1 }]);
-      onClose();
+    const handleSubmit = async () => {
+      try {
+        // First, add the workout
+        const workoutPayload = {
+          name: workoutName,
+          exercises: exercises.map(exercise => ({
+            name: exercise.name,
+            sets: exercise.sets,
+          })),
+        };
+  
+        const response = await fetch(`${API_URL}/workouts/add`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken}`
+          },
+          body: JSON.stringify(workoutPayload)
+        });
+  
+        if (!response.ok) {
+          throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+        }
+  
+        const result = await response.json();
+        const workoutId = result.workout.id;
+  
+        // Now, complete the workout with dummy data
+        const dummyCompletionData = {
+          exerciseData: exercises.map(exercise => ({
+            weights: Array(exercise.sets).fill(-1),
+            reps: Array(exercise.sets).fill(-1),
+          }))
+        };
+  
+        const completionResponse = await fetch(`${API_URL}/workouts/complete/${workoutId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken}`
+          },
+          body: JSON.stringify(dummyCompletionData),
+        });
+  
+        if (!completionResponse.ok) {
+          throw new Error('Failed to complete dummy workout');
+        }
+  
+        // Call the onAdd function to update the UI
+        onAdd(workoutName, exercises);
+  
+        // Reset the form
+        setWorkoutName('');
+        setExercises([{ name: '', sets: 1 }]);
+        onClose();
+      } catch (error) {
+        console.error('Error adding and completing workout:', error);
+        // You might want to show an error message to the user here
+      }
     };
 
     return (
@@ -395,12 +454,14 @@ export default function WorkoutScreen() {
         visible={showAddWorkoutModal}
         onClose={() => setShowAddWorkoutModal(false)}
         onAdd={async (name, exercises) => {
-          const workoutId = await addWorkout(name, exercises);
-          if (workoutId) {
-            // Refresh workouts list here
-            // You might want to fetch the updated list from the server
-            // or add the new workout to the existing list
-          }
+          // const workoutId = await addWorkout(name, exercises);
+          // if (workoutId) {
+          //   // Refresh workouts list here
+          //   // You might want to fetch the updated list from the server
+          //   // or add the new workout to the existing list
+          // }
+          await fetchWorkouts();
+
         }}
       />
 

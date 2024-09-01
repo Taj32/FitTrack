@@ -13,7 +13,7 @@ const Workout = sequelize.define('Workout', {
     allowNull: false
   },
   date_created: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
     allowNull: false
   },
   user_id: {
