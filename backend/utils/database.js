@@ -1,7 +1,7 @@
 import { Sequelize } from 'sequelize';
 
 
-const sequelize = new Sequelize(,  {
+const sequelize = new Sequelize('logindb', 'azureuser', 'Easd17527!321',  {
     dialect: 'mssql',
     host: 'mygymserver.database.windows.net',
     //database: 'logindb',
