@@ -1,2 +1,4 @@
 {
+    "appService.defaultWebAppToDeploy": "/subscriptions/0851b4e9-2889-4d10-a6e5-0444a03d3e77/resourceGroups/GymBackend_group/providers/Microsoft.Web/sites/GymBackend",
+    "appService.deploySubpath": "backend"
 }
