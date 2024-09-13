@@ -7,7 +7,9 @@ import React, { SetStateAction, useEffect, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.205:5000';
+//const API_URL = 'http://192.168.1.205:5000';
+const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
+
 
 export default function WorkoutScreen() {
 

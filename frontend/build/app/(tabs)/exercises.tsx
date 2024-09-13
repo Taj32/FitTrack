@@ -9,7 +9,10 @@ import {
 } from 'react-native-responsive-screen';
 
 const { width, height } = Dimensions.get('window');
-const API_URL = 'http://192.168.1.205:5000';
+//const API_URL = 'http://192.168.1.205:5000';
+const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
+
+
 
 const App = () => {
 
@@ -17,52 +20,52 @@ const App = () => {
     {
       id: 1,
       title: 'Bench Press',
-      imageSource: require('@/assets/images/workouts/benchPress.jpg'),
+      imageSource: require('@/public/images/workouts/benchPress.jpg'),
     },
     {
       id: 2,
       title: 'Squat',
-      imageSource: require('@/assets/images/workouts/squat.png'),
+      imageSource: require('@/public/images/workouts/squat.png'),
     },
     {
       id: 3,
       title: 'Deadlift',
-      imageSource: require('@/assets/images/workouts/deadLift.png'),
+      imageSource: require('@/public/images/workouts/deadLift.png'),
     },
     {
       id: 4,
       title: 'Pull Up',
-      imageSource: require('@/assets/images/workouts/pullup.png'),
+      imageSource: require('@/public/images/workouts/pullup.png'),
     },
     {
       id: 5,
       title: 'Leg Press',
-      imageSource: require('@/assets/images/workouts/legPress.png'),
+      imageSource: require('@/public/images/workouts/legPress.png'),
     },
     {
       id: 6,
       title: 'Shoulder Press',
-      imageSource: require('@/assets/images/workouts/shoulderPress.png'),
+      imageSource: require('@/public/images/workouts/shoulderPress.png'),
     },
     {
       id: 7,
       title: 'Ab Crunch',
-      //imageSource: require('@/assets/images/workouts/abCrunch.png'),
+      //imageSource: require('@/public/images/workouts/abCrunch.png'),
     },
     {
       id: 8,
       title: 'Leg Curl',
-      //imageSource: require('@/assets/images/workouts/legCurl.png'),
+      //imageSource: require('@/public/images/workouts/legCurl.png'),
     },
     {
       id: 9,
       title: 'Leg Extension',
-      //imageSource: require('@/assets/images/workouts/legExtension.png'),
+      //imageSource: require('@/public/images/workouts/legExtension.png'),
     },
     {
       id: 10,
       title: 'Bicep Curl',
-      //imageSource: require('@/assets/images/workouts/bicepCurl.png'),
+      //imageSource: require('@/public/images/workouts/bicepCurl.png'),
     },
   ];
 
@@ -169,7 +172,7 @@ const App = () => {
           source={
             item.imageSource
               ? item.imageSource
-              : require('@/assets/images/running-man.png')
+              : require('@/public/images/running-man.png')
           }
           style={styles.exerciseImage}
         />

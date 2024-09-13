@@ -8,14 +8,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
-const logo = require("@/assets/images/adaptive-icon.png")
-const google = require("@/assets/images/google.png")
-const apple = require("@/assets/images/apple-logo.png")
-const instagram = require("@/assets/images/instagram.png")
+const logo = require("@/public/images/adaptive-icon.png")
+const google = require("@/public/images/google.png")
+const apple = require("@/public/images/apple-logo.png")
+const instagram = require("@/public/images/instagram.png")
 
 //const API_URL = 'http://localhost:5000'; //Platform.OS === 'ios' ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
-const API_URL = 'http://192.168.1.205:5000';
-
+//const API_URL = 'http://192.168.1.205:5000';
+const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
 
 
 
@@ -124,7 +124,7 @@ export default function LoginForm() {
 
   return (
     <View style={styles.container}>
-      <ImageBackground source={require('@/assets/images/download.jpg')} style={styles.image}>
+      <ImageBackground source={require('@/public/images/download.jpg')} style={styles.image}>
         <View style={styles.card}>
           <Text style={styles.heading}>{isLogin ? 'Login' : 'Signup'}</Text>
           <View style={styles.form}>

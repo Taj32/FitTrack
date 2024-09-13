@@ -9,7 +9,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TouchableOpacity, Animated, LayoutAnimation } from 'react-native';
 import React from 'react';
 
-const API_URL = 'http://192.168.1.205:5000';
+//const API_URL = 'http://192.168.1.205:5000';
+const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
+
 
 const screenHeight = Dimensions.get('window').height;
 const topElementsHeight = 100;
@@ -68,7 +70,7 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
                     }
                 ]}>
                     <Image
-                        source={require('@/assets/images/average-user-sample.png')}
+                        source={require('@/public/images/average-user-sample.png')}
                         style={styles.profilePic}
                     />
                     <ThemedText style={styles.friendName}>{friend.name}</ThemedText>
@@ -83,7 +85,7 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
 //     <View>
 //         <TouchableOpacity onPress={() => onAdd(user.id)} style={styles.userItem}>
 //             <Image
-//                 source={require('@/assets/images/average-user-sample.png')}
+//                 source={require('@/public/images/average-user-sample.png')}
 //                 style={styles.userProfilePic}
 //             />
 //             <ThemedText style={styles.userName}>{user.name}</ThemedText>
@@ -96,7 +98,7 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
 const UserItem = React.memo(({ user, onSendRequest }) => (
     <View style={styles.userItem}>
         <Image
-            source={require('@/assets/images/average-user-sample.png')}
+            source={require('@/public/images/average-user-sample.png')}
             style={styles.userProfilePic}
         />
         <ThemedText style={styles.userName}>{user.name}</ThemedText>
@@ -369,7 +371,7 @@ export default function FriendScreen() {
         ) : (
             <View style={styles.defaultContainer}>
                 <Image
-                    source={require('@/assets/images/training.png')}
+                    source={require('@/public/images/training.png')}
                     style={styles.defaultImage}
                 />
                 <Text style={styles.defaultText}>Fitness is more fun with friends! Use the add button to cheer each other on and crush your goals together.</Text>

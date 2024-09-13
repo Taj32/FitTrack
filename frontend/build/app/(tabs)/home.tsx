@@ -10,9 +10,9 @@ import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { BicepEmoji } from '@/components/BicepEmoji';
 import { useFont } from "@shopify/react-native-skia";
 
-import inter from '@/assets/fonts/SpaceMono-Regular.ttf'; //frontend/gym-app/assets/fonts/inter-medium.ttf
+import inter from '@/public/fonts/SpaceMono-Regular.ttf'; //frontend/gym-app/public/fonts/inter-medium.ttf
 import { red } from 'react-native-reanimated/lib/typescript/reanimated2/Colors';
-//  @/assets/fonts/inter-medium.ttf
+//  @/public/fonts/inter-medium.ttf
 import Carousel from 'react-native-reanimated-carousel';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
@@ -29,7 +29,8 @@ const DATA = Array.from({ length: 30 }, (_, i) => ({
     highTmp: 40 + 30 * Math.random(),
 }));
 
-const API_URL = 'http://192.168.1.205:5000';
+//const API_URL = 'http://192.168.1.205:5000';
+const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
 
 // types
 type WorkoutDate = string;
@@ -247,13 +248,13 @@ const items = [
     {
         id: 'item-1',
         title: 'Average Weight',
-        img: require('@/assets/images/running-man.png'),
+        img: require('@/public/images/running-man.png'),
         color: '#177AD5',
     },
     {
         id: 'item-2',
         title: 'Average steps',
-        img: require('@/assets/images/heart.png'),
+        img: require('@/public/images/heart.png'),
         color: '#FF6700',
     },
     // Add more items as needed
@@ -388,7 +389,7 @@ return (
         headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
         headerImage={
             <Image
-                source={require('@/assets/images/running-man.png')}
+                source={require('@/public/images/running-man.png')}
                 style={styles.reactLogo}
             />
         }
