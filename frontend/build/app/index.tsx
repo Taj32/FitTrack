@@ -134,7 +134,7 @@ export default function LoginForm() {
               <TextInput secureTextEntry={true} style={styles.input} placeholder="Password" onChangeText={setPassword}></TextInput>
               <Text style={[styles.message, { color: isError ? 'red' : 'green' }]}>{message ? getMessage() : null}</Text>
               <TouchableOpacity style={styles.button} onPress={onSubmitHandler}>
-                <Text style={styles.buttonText}>Done</Text>
+                <Text style={styles.buttonText}>Login</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.buttonAlt} onPress={onChangeHandler}>
                 <Text style={styles.buttonAltText}>{isLogin ? 'Sign Up' : 'Log In'}</Text>

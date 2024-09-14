@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./public/images/icon.png",
     "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "splash": {
       "image": "./public/images/splash.png",
       "resizeMode": "contain",
