@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { DateWidget } from '@/components/DateWidget';
 import { format, parseISO, startOfMonth, isSameMonth } from 'date-fns';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Animated, } from 'react-native';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
@@ -16,6 +16,7 @@ import { LayoutAnimation } from 'react-native';
 
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 //const API_URL = 'http://192.168.1.205:5000';
 const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
@@ -34,9 +35,11 @@ export default function JournalScreen() {
 
 
 
-  useEffect(() => {
-    fetchWorkouts();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchWorkouts();
+    }, [])
+  );
 
   useEffect(() => {
     setGroupedWorkouts(groupWorkoutsByMonth(workouts));
@@ -480,10 +483,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalView: {
-    margin: 20,
+    margin: 10,
     backgroundColor: 'white',
     borderRadius: 20,
-    padding: 35,
+    padding: 20,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
@@ -502,7 +505,7 @@ const styles = StyleSheet.create({
     top: 10,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: 'bold',
     marginBottom: 15,
   },
@@ -547,7 +550,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   exerciseDetails: {
-    marginLeft: 10,
+    //marginLeft: 10,
     marginBottom: 20,
     width: '100%',
   },
@@ -557,13 +560,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   setsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    flexDirection: 'column',
+    //flexWrap: 'wrap',
+    //justifyContent: 'flex-start',
   },
   setDetails: {
-    marginRight: 10,
-    marginBottom: 5,
+   // marginRight: 10,
+    marginBottom: 10,
   },
   setText: {
     fontSize: 14,
