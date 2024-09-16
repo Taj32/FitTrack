@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Modal, SafeAreaView, Text, View, ScrollView, Button, ActivityIndicator } from 'react-native';
+import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Modal, SafeAreaView, Text, View, ScrollView, Button, ActivityIndicator, Animated, LayoutAnimation, Alert } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -43,8 +43,10 @@ export default function WorkoutScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [exerciseData, setExerciseData] = useState<{ [exerciseId: number]: { [setIndex: number]: { weight: string, reps: string } } }>({});
-
   const [isLoading, setIsLoading] = useState(true);
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [animatedValues, setAnimatedValues] = useState({});
 
 
 
@@ -75,6 +77,50 @@ export default function WorkoutScreen() {
       fetchWorkouts();
     }
   }, [userToken]);
+
+  useEffect(() => {
+    const newAnimatedValues = {};
+    workouts.forEach(workout => {
+      newAnimatedValues[workout.id] = new Animated.Value(0);
+    });
+    setAnimatedValues(newAnimatedValues);
+  }, [workouts]);
+
+  const animateSlide = (id, toValue) => {
+    Animated.spring(animatedValues[id], {
+      toValue,
+      friction: 8,
+      tension: 50,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const setEditMode = (value) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsEditMode(value);
+    Object.keys(animatedValues).forEach(id => {
+      animateSlide(id, value ? 1 : 0);
+    });
+  };
+
+  const confirmDelete = (workoutId) => {
+    Alert.alert(
+      "Confirm Deletion",
+      "Are you sure you want to delete this workout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          //onPress: () => //deleteWorkout(workoutId),
+          style: "destructive"
+        }
+      ]
+    );
+  };
+
 
 
   const addWorkoutTemp = async (payload: { name: string; exercises: { name: string; sets: number; }[]; }) => {
@@ -437,9 +483,11 @@ export default function WorkoutScreen() {
 
     <SafeAreaView style={styles.container}>
       <ThemedView style={styles.buttonContainer}>
-        <ThemedText style={styles.editButton} onPress={() => alert('Edit pressed')}>
-          Edit
-        </ThemedText>
+        <TouchableOpacity onPress={() => setEditMode(!isEditMode)}>
+          <ThemedText style={styles.editButton}>
+            {isEditMode ? 'Done' : 'Edit'}
+          </ThemedText>
+        </TouchableOpacity>
 
         <View style={styles.spacer} />
 
@@ -489,7 +537,7 @@ export default function WorkoutScreen() {
         ListFooterComponent={() => <View style={styles.separator} />}
       ></FlatList> */}
 
-      {isLoading ? (
+      {/* {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
         </View>
@@ -504,6 +552,60 @@ export default function WorkoutScreen() {
                 <Ionicons name="caret-forward" size={16} color="gray" />
               </View>
             </TouchableOpacity>
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListHeaderComponent={() => <View style={styles.separator} />}
+          ListFooterComponent={() => <View style={styles.separator} />}
+        />
+      )} */}
+
+{isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      ) : (
+        <FlatList
+          data={workouts}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.workoutLogContainer}>
+              <Animated.View style={[
+                styles.deleteButtonContainer,
+                {
+                  transform: [{
+                    translateX: animatedValues[item.id].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-40, 0],
+                    }),
+                  }],
+                },
+              ]}>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => confirmDelete(item.id)}
+                >
+                  <Ionicons name="remove-circle" size={24} color="red" />
+                </TouchableOpacity>
+              </Animated.View>
+              <Animated.View style={[
+                styles.workoutLog,
+                {
+                  transform: [{ 
+                    translateX: animatedValues[item.id].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 40],
+                    }) 
+                  }],
+                },
+              ]}>
+                <TouchableOpacity onPress={() => !isEditMode && handleWorkoutPress(item)}>
+                  <View style={styles.workoutContainer}>
+                    <Text style={styles.workoutOptions}>{item.name}</Text>
+                    <Ionicons name="caret-forward" size={16} color="gray" />
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListHeaderComponent={() => <View style={styles.separator} />}
@@ -650,6 +752,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 15,
   },
+  
   buttonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -748,4 +851,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  workoutItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  deleteButtonContainer: {
+    position: 'absolute',
+    left: 0,
+    height: '100%',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  deleteButton: {
+    padding: 10,
+  },
+  workoutContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white', // or any background color that matches your design
+  },
+  workoutTouchable: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+  },
+
 });

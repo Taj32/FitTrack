@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { signup, login, isAuth, getName, getUsers } from '../controllers/auth.js';
+import { signup, login, isAuth, getName, getUsers, verifyEmail } from '../controllers/auth.js';
 
 const router = express.Router();
 
@@ -13,6 +13,8 @@ router.get('/private', isAuth);
 router.get('/getName', isAuth, getName);  // New route
 
 router.get('/getUsers', isAuth, getUsers);  // New route
+
+router.get('/verify/:token', verifyEmail );
 
 
 // exercises

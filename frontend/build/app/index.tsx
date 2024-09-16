@@ -86,6 +86,7 @@ export default function LoginForm() {
       name,
       password,
     };
+
     fetch(`${API_URL}/${isLogin ? 'auth/login' : 'auth/signup'}`, {
       method: 'POST',
       headers: {
@@ -96,6 +97,10 @@ export default function LoginForm() {
       .then(async res => {
         const textResponse = await res.text(); // Get the raw text response
         console.log('Raw response:', textResponse); // Log the raw response
+        
+        if (!isLogin && res.status === 200) {
+          setMessage("Please check your email to verify your account before logging in.");
+        }
         try {
           const jsonRes = JSON.parse(textResponse); // Try to parse it as JSON
           if (res.status !== 200) {
@@ -134,10 +139,11 @@ export default function LoginForm() {
               <TextInput secureTextEntry={true} style={styles.input} placeholder="Password" onChangeText={setPassword}></TextInput>
               <Text style={[styles.message, { color: isError ? 'red' : 'green' }]}>{message ? getMessage() : null}</Text>
               <TouchableOpacity style={styles.button} onPress={onSubmitHandler}>
-                <Text style={styles.buttonText}>Login</Text>
+                {/* <Text style={styles.buttonText}>Log in</Text> */}
+                <Text style={styles.buttonText}>{isLogin ? 'Log in' : 'Create Account'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.buttonAlt} onPress={onChangeHandler}>
-                <Text style={styles.buttonAltText}>{isLogin ? 'Sign Up' : 'Log In'}</Text>
+                <Text style={styles.buttonAltText}>{isLogin ? 'Sign Up' : 'Back'}</Text>
               </TouchableOpacity>
             </View>
           </View>
