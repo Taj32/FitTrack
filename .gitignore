@@ -132,3 +132,4 @@ gymApp.code-workspace
 
 backend/utils/database.js
 backend/utils/emailService.js
+

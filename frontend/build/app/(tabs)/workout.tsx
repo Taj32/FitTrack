@@ -103,10 +103,10 @@ export default function WorkoutScreen() {
     });
   };
 
-  const confirmDelete = (workoutId) => {
+  const confirmDelete = (name: String) => {
     Alert.alert(
       "Confirm Deletion",
-      "Are you sure you want to delete this workout?",
+      "Are you sure you want to delete this workout? This action cannot be undone.",
       [
         {
           text: "Cancel",
@@ -114,12 +114,59 @@ export default function WorkoutScreen() {
         },
         {
           text: "Delete",
-          //onPress: () => //deleteWorkout(workoutId),
+          onPress: () => deleteWorkout(name),
           style: "destructive"
         }
       ]
     );
   };
+
+  const deleteWorkout = async (workoutName: string) => {
+    try {
+      const response = await fetch(`${API_URL}/workouts/user-workouts`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}` // Ensure userToken is defined
+        }
+      });
+  
+      const data = await response.json();
+      console.log('Fetched data:', JSON.stringify(data, null, 2));
+  
+      // Filter workouts by name (e.g., "Mini workout")
+      const workoutsToDelete = data.filter(workout => workout.name === workoutName);
+  
+      if (workoutsToDelete.length === 0) {
+        alert('No workouts found with that name');
+        return;
+      }
+  
+      // Delete each workout instance
+      for (let workout of workoutsToDelete) {
+        const deleteResponse = await fetch(`${API_URL}/workouts/remove/${workout.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${userToken}`
+          }
+        });
+  
+        if (!deleteResponse.ok) {
+          throw new Error(`Failed to delete workout with ID ${workout.id}`);
+        }
+      }
+  
+      await fetchWorkouts();
+      alert(`${workoutsToDelete.length - 1} workout(s) deleted successfully`);
+  
+      // Optionally, refresh the workout list after deletion
+    } catch (error) {
+      console.error('Error deleting workouts:', error);
+      alert('Failed to delete workouts');
+    }
+  };
+  
+  
 
 
 
@@ -582,7 +629,7 @@ export default function WorkoutScreen() {
               ]}>
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={() => confirmDelete(item.id)}
+                  onPress={() => confirmDelete(item.name)}
                 >
                   <Ionicons name="remove-circle" size={24} color="red" />
                 </TouchableOpacity>
