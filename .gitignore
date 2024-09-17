@@ -129,4 +129,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 gymApp.code-workspace
+
 backend/utils/database.js
+backend/utils/emailService.js
