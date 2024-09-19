@@ -130,18 +130,18 @@ export default function WorkoutScreen() {
           'Authorization': `Bearer ${userToken}` // Ensure userToken is defined
         }
       });
-  
+
       const data = await response.json();
       console.log('Fetched data:', JSON.stringify(data, null, 2));
-  
+
       // Filter workouts by name (e.g., "Mini workout")
       const workoutsToDelete = data.filter(workout => workout.name === workoutName);
-  
+
       if (workoutsToDelete.length === 0) {
         alert('No workouts found with that name');
         return;
       }
-  
+
       // Delete each workout instance
       for (let workout of workoutsToDelete) {
         const deleteResponse = await fetch(`${API_URL}/workouts/remove/${workout.id}`, {
@@ -150,23 +150,23 @@ export default function WorkoutScreen() {
             'Authorization': `Bearer ${userToken}`
           }
         });
-  
+
         if (!deleteResponse.ok) {
           throw new Error(`Failed to delete workout with ID ${workout.id}`);
         }
       }
-  
+
       await fetchWorkouts();
       alert(`${workoutsToDelete.length - 1} workout(s) deleted successfully`);
-  
+
       // Optionally, refresh the workout list after deletion
     } catch (error) {
       console.error('Error deleting workouts:', error);
       alert('Failed to delete workouts');
     }
   };
-  
-  
+
+
 
 
 
@@ -188,7 +188,7 @@ export default function WorkoutScreen() {
         throw new Error('User token is missing');
       }
 
-      
+
 
       const response = await fetch(`${API_URL}/workouts/add`, {
         method: 'POST',
@@ -218,7 +218,7 @@ export default function WorkoutScreen() {
     }
   };
 
-//For the initally created workouts --> dummy workout
+  //For the initally created workouts --> dummy workout
   const addWorkout = async (workoutName: string, exercises: { name: string; sets: number }[]) => {
     try {
       const workoutData = {
@@ -415,9 +415,13 @@ export default function WorkoutScreen() {
     const [exercises, setExercises] = useState([{ name: '', sets: 1 }]);
 
     const addExercise = () => {
-      setExercises([...exercises, { name: '', sets: 1 }]);
+      if (exercises.length < 8) {
+        setExercises([...exercises, { name: '', sets: 1 }]);
+      } else {
+        Alert.alert("Exercise Limit Reached", "You can add a maximum of 8 exercises per workout.");
+      }
     };
-  
+
     const handleExerciseChange = (index, field, value) => {
       const newExercises = [...exercises];
       newExercises[index][field] = value;
@@ -434,7 +438,7 @@ export default function WorkoutScreen() {
             sets: exercise.sets,
           })),
         };
-  
+
         const response = await fetch(`${API_URL}/workouts/add`, {
           method: 'POST',
           headers: {
@@ -443,14 +447,14 @@ export default function WorkoutScreen() {
           },
           body: JSON.stringify(workoutPayload)
         });
-  
+
         if (!response.ok) {
           throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
         }
-  
+
         const result = await response.json();
         const workoutId = result.workout.id;
-  
+
         // Now, complete the workout with dummy data
         const dummyCompletionData = {
           exerciseData: exercises.map(exercise => ({
@@ -458,7 +462,7 @@ export default function WorkoutScreen() {
             reps: Array(exercise.sets).fill(-1),
           }))
         };
-  
+
         const completionResponse = await fetch(`${API_URL}/workouts/complete/${workoutId}`, {
           method: 'POST',
           headers: {
@@ -467,14 +471,14 @@ export default function WorkoutScreen() {
           },
           body: JSON.stringify(dummyCompletionData),
         });
-  
+
         if (!completionResponse.ok) {
           throw new Error('Failed to complete dummy workout');
         }
-  
+
         // Call the onAdd function to update the UI
         onAdd(workoutName, exercises);
-  
+
         // Reset the form
         setWorkoutName('');
         setExercises([{ name: '', sets: 1 }]);
@@ -491,6 +495,7 @@ export default function WorkoutScreen() {
           <ThemedText type="title">Add New Workout</ThemedText>
           <TextInput
             style={styles.nameInput}
+            placeholderTextColor="#999"
             placeholder="Workout Name"
             value={workoutName}
             onChangeText={setWorkoutName}
@@ -500,16 +505,23 @@ export default function WorkoutScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Exercise Name"
+                placeholderTextColor="#999"
                 value={exercise.name}
+                id="inputID"
                 onChangeText={(text) => handleExerciseChange(index, 'name', text)}
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Sets"
-                value={exercise.sets.toString()}
-                onChangeText={(text) => handleExerciseChange(index, 'sets', parseInt(text) || 0)}
-                keyboardType="numeric"
-              />
+
+              <View style={styles.setsContainer}>
+                <ThemedText style={styles.setsLabel}>Sets:</ThemedText>
+                <TextInput
+                  style={styles.setsInput}
+                  placeholder="Sets"
+                  placeholderTextColor="#999"
+                  value={exercise.sets.toString()}
+                  onChangeText={(text) => handleExerciseChange(index, 'sets', parseInt(text) || 0)}
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
           ))}
           <TouchableOpacity style={styles.addButton} onPress={addExercise}>
@@ -606,7 +618,7 @@ export default function WorkoutScreen() {
         />
       )} */}
 
-{isLoading ? (
+      {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
         </View>
@@ -637,11 +649,11 @@ export default function WorkoutScreen() {
               <Animated.View style={[
                 styles.workoutLog,
                 {
-                  transform: [{ 
+                  transform: [{
                     translateX: animatedValues[item.id].interpolate({
                       inputRange: [0, 1],
                       outputRange: [0, 40],
-                    }) 
+                    })
                   }],
                 },
               ]}>
@@ -707,11 +719,15 @@ export default function WorkoutScreen() {
                               <TextInput
                                 style={styles.input}
                                 placeholder="weight"
+                                placeholderTextColor="#999"
+                                id="inputID"
                                 onChangeText={(value) => handleInputChange(exercise.id || exerciseIndex, localSetIndex, 'weight', value)}
                               />
                               <TextInput
                                 style={styles.input}
                                 placeholder="reps"
+                                placeholderTextColor="#999"
+                                id="inputID"
                                 onChangeText={(value) => handleInputChange(exercise.id || exerciseIndex, localSetIndex, 'reps', value)}
                               />
                             </View>
@@ -771,7 +787,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
   addModalContainer: {
-    marginTop: 128,
+    marginTop: 85,
     padding: 16,
     marginHorizontal: 24,
     backgroundColor: '#f2f1f6',
@@ -799,7 +815,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 15,
   },
-  
+
   buttonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -861,10 +877,14 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-  exerciseInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  placeholder: {
+    color: 'red',
+    opacity: 1,
   },
+  // exerciseInput: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  // },
   addButton: {
     backgroundColor: '#007AFF',
     padding: 10,
@@ -926,6 +946,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 16,
+  },
+
+  // exerciseInput: {
+  //   flexDirection: 'row',
+  //   marginBottom: 10,
+  // },
+  // exerciseNameInput: {
+  //   borderWidth: 1,
+  //   borderColor: '#ccc',
+  //   borderRadius: 5,
+  //   padding: 10,
+  //   marginBottom: 5,
+  // },
+  // setsContainer: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  // },
+  // setsLabel: {
+  //   marginRight: 10,
+  // },
+  // setsInput: {
+  //   borderWidth: 1,
+  //   borderColor: '#ccc',
+  //   borderRadius: 5,
+  //   padding: 10,
+  //   flex: 1,
+  // },
+
+
+  exerciseInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  exerciseNameInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    marginRight: 40,
+  },
+  setsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  setsLabel: {
+    marginRight: 10,
+    marginLeft: 95,
+  },
+  setsInput: {
+    width: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    textAlign: 'center',
   },
 
 });
