@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/ThemedText";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useState } from "react";
-import { SafeAreaView, View, Text, TextInput, FlatList, StyleSheet, Button, Alert, Dimensions, Image, TouchableOpacity, Modal } from 'react-native';
+import React, { useEffect, useState } from "react";
+import { SafeAreaView, View, Text, TextInput, FlatList, StyleSheet, Button, Alert, Dimensions, Image, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { LineChart } from "react-native-gifted-charts";
 import {
   widthPercentageToDP as wp,
@@ -16,74 +16,63 @@ const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
 
 const App = () => {
 
-  const languages = [
-    {
-      id: 1,
-      title: 'Bench Press',
-      imageSource: require('@/public/images/workouts/benchPress.jpg'),
-    },
-    {
-      id: 2,
-      title: 'Squat',
-      imageSource: require('@/public/images/workouts/squat.png'),
-    },
-    {
-      id: 3,
-      title: 'Deadlift',
-      imageSource: require('@/public/images/workouts/deadLift.png'),
-    },
-    {
-      id: 4,
-      title: 'Pull Up',
-      imageSource: require('@/public/images/workouts/pullup.png'),
-    },
-    {
-      id: 5,
-      title: 'Leg Press',
-      imageSource: require('@/public/images/workouts/legPress.png'),
-    },
-    {
-      id: 6,
-      title: 'Shoulder Press',
-      imageSource: require('@/public/images/workouts/shoulderPress.png'),
-    },
-    {
-      id: 7,
-      title: 'Ab Crunch',
-      //imageSource: require('@/public/images/workouts/abCrunch.png'),
-    },
-    {
-      id: 8,
-      title: 'Leg Curl',
-      //imageSource: require('@/public/images/workouts/legCurl.png'),
-    },
-    {
-      id: 9,
-      title: 'Leg Extension',
-      //imageSource: require('@/public/images/workouts/legExtension.png'),
-    },
-    {
-      id: 10,
-      title: 'Bicep Curl',
-      //imageSource: require('@/public/images/workouts/bicepCurl.png'),
-    },
-  ];
+  const exercises: any[] | (() => any[]) = [];
 
-  const [data, setData] = useState(languages);
+  const [data, setData] = useState(exercises);
+  const [dynamicExercises, setDynamicExercises] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+
+  const [allExercises, setAllExercises] = useState([]);
+  const [filteredExercises, setFilteredExercises] = useState([]);
   const [searchText, setSearchText] = useState('');
 
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [exerciseData, setExerciseData] = useState([]);
 
+  const [isLoading, setIsLoading] = useState(true);
+
+
+  useEffect(() => {
+    fetchAllExercises();
+  }, []);
+
+  const fetchAllExercises = async () => {
+    setIsLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${API_URL}/exercises/getAll`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const exercises = await response.json();
+      setData(exercises);
+      setAllExercises(exercises);
+    } catch (error) {
+      console.error('Error fetching exercises:', error);
+      Alert.alert('Error', 'Failed to fetch exercises. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   const fetchExerciseData = async (exerciseName) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       console.log('Token:', token);
-  
+
       const url = `${API_URL}/exercises/get?exercise_name=${encodeURIComponent(exerciseName)}`;
       console.log('Fetching from URL:', url);
-  
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -91,24 +80,24 @@ const App = () => {
           'Content-Type': 'application/json',
         },
       });
-  
+
       console.log('Response status:', response.status);
       console.log('Response headers:', JSON.stringify(response.headers));
-  
+
       const responseData = await response.json();
-  
+
       if (!response.ok) {
         console.error('Error response body:', JSON.stringify(responseData));
         throw new Error(`HTTP error! status: ${response.status}, message: ${responseData.message}`);
       }
-  
+
       console.log('Received data:', JSON.stringify(responseData));
-  
+
       if (!Array.isArray(responseData) || responseData.length === 0) {
         console.log('No exercise data found');
         return [];
       }
-  
+
       return responseData.map(item => ({
         value: parseFloat(item.weight),
         label: new Date(item.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
@@ -144,23 +133,28 @@ const App = () => {
     };
   };
 
-  const searchFunction = (text: React.SetStateAction<string>) => {
+  const searchFunction = (text) => {
+    console.log("text: ", text);
     setSearchText(text);
-    text = text.toLowerCase();
-    if (text === "") {
-      setData(languages);
+    if (text) {
+      const filtered = data.filter(exercise =>
+        exercise.title.toLowerCase().includes(text.toLowerCase())
+      );
+      setData(filtered);
+    } else {
+      setData(allExercises);
     }
-    else {
-      let filteredLanguages = languages.filter(language => (language.title.toLowerCase().startsWith(text)))
-      setData(filteredLanguages);
-    }
-  }
+  };
+
 
   const handleExercisePress = async (exercise) => {
-    console.log("looking at this");
     setSelectedExercise(exercise);
-    const data = await fetchExerciseData(exercise.title);
-    console.log(data);
+    let data;
+    if (exercise.isDynamic) {
+      data = exercise.apiData;
+    } else {
+      data = await fetchExerciseData(exercise.title);
+    }
     setExerciseData(data);
     setModalVisible(true);
   };
@@ -169,14 +163,10 @@ const App = () => {
     <TouchableOpacity onPress={() => handleExercisePress(item)}>
       <View style={styles.box}>
         <Image
-          source={
-            item.imageSource
-              ? item.imageSource
-              : require('@/public/images/running-man.png')
-          }
+          source={require('@/public/images/running-man.png')}
           style={styles.exerciseImage}
         />
-        <Text style={styles.title}> {item.title} </Text>
+        <Text style={styles.title}>{item.title}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -228,33 +218,52 @@ const App = () => {
   }
 
   return (
+
     <SafeAreaView style={styles.container}>
 
-      <View style={styles.searchBarContainer}>
-        <View style={styles.searchRow}>
-          <Text style={styles.pageTitle}>Exercises</Text>
-          
-        </View>
 
-        <TextInput
-          style={styles.searchBar}
-          placeholderTextColor="black"
-          placeholder="Search available exercises"
-          value={searchText}
-          onChangeText={text => searchFunction(text)}
-        />
-      </View>
-
-      <View style={styles.listDataContainer}>
+      {/* <View style={styles.listDataContainer}>
         <FlatList
-          data={data}
-          extraData={data}
+          data={[...data,]}
+          extraData={[data]}
           showsVerticalScrollIndicator={false}
           renderItem={renderItem}
           keyExtractor={(item) => item.id.toString()}
         />
       </View>
-      <ExerciseModal />
+      <ExerciseModal /> */}
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      ) : (
+
+        <><View style={styles.searchBarContainer}>
+          <View style={styles.searchRow}>
+            {/* <ThemedText type="title" >Log</ThemedText> */}
+            <Text style={styles.pageTitle}>Exercises</Text>
+
+          </View>
+
+          <TextInput
+            style={styles.searchBar}
+            placeholderTextColor="black"
+            placeholder="Search available exercises"
+            value={searchText}
+            onChangeText={text => searchFunction(text)} />
+        </View>
+          <View style={styles.listDataContainer}>
+            <FlatList
+              data={[...data,]}
+              extraData={[data]}
+              showsVerticalScrollIndicator={false}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id.toString()} />
+          </View>
+          <ExerciseModal /> 
+        </>
+      )}
 
     </SafeAreaView>
   );
@@ -265,6 +274,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f2f1f6', //'#f2f1f6', [change later when have better images]
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   searchBarContainer: {
     flex: 1.25,
     //backgroundColor: 'red',
@@ -274,7 +288,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pageTitle: {
-    fontSize: wp(7),
+    //fontSize: wp(7),
+    fontSize: 32,
+    fontWeight: 'bold',
+    //lineHeight: 16,
   },
   title: {
     fontSize: wp(5.5),
@@ -359,11 +376,14 @@ const styles = StyleSheet.create({
   subtext: {
     fontSize: 16,
     color: 'gray',
-    paddingVertical: 10,
+    paddingTop: 20,
+    paddingBottom: 10,
+    //paddingBottom: 1
+    //paddingVertical: 12,
   },
   recordContainer: {
     flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: 9,
   },
   recordText: {
     fontSize: 16,

@@ -7,7 +7,37 @@ import { User, Workout, Exercise, sequelize , Friendship} from '../models/index.
 
 import { Op } from 'sequelize';
 
+export const getAllExercises = async (req, res) => {
+    const userEmail = req.email; // This comes from the isAuth middleware
 
+    try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Get all unique exercise names for the user
+        const uniqueExercises = await Exercise.findAll({
+            where: { userId: user.id },
+            attributes: [
+                [Exercise.sequelize.fn('DISTINCT', Exercise.sequelize.col('exercise_name')), 'exercise_name']
+            ],
+            order: [['exercise_name', 'ASC']]
+        });
+
+        // Format the response
+        const formattedExercises = uniqueExercises.map((exercise, index) => ({
+            id: index + 1, // Generate a unique id
+            title: exercise.exercise_name,
+            imageSource: null // We'll use the default image on the frontend
+        }));
+
+        res.json(formattedExercises);
+    } catch (error) {
+        console.error('Error fetching all exercises:', error);
+        res.status(500).json({ message: 'Error fetching all exercises', error: error.message });
+    }
+};
 
 export const addExercise = async (req, res) => {
     const { exercise_name, weight, reps, sets, date } = req.body;
