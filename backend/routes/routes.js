@@ -1,8 +1,10 @@
 import express from 'express';
+import multer from 'multer';
 
-import { signup, login, isAuth, getName, getUsers, verifyEmail } from '../controllers/auth.js';
+import { signup, login, isAuth, getName, getUsers, verifyEmail, uploadProfileImage, serveProfileImage, getImageURL } from '../controllers/auth.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/login', login);
 
@@ -15,6 +17,12 @@ router.get('/getName', isAuth, getName);  // New route
 router.get('/getUsers', isAuth, getUsers);  // New route
 
 router.get('/verify/:token', verifyEmail );
+
+router.post('/upload-profile-image', isAuth, upload.single('image'), uploadProfileImage);
+
+router.get('/profile-image/:imageId', isAuth, serveProfileImage);
+
+router.get('/getImageURL', isAuth, getImageURL);
 
 
 // exercises

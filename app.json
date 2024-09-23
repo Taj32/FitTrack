@@ -5,8 +5,10 @@
         "projectId": "0e7e4c7e-6d50-4b13-95ba-4778781f3d65"
       }
     },
+    
     "ios": {
       "bundleIdentifier": "com.hipps.gymapp"
     }
+    
   }
 }

@@ -11,11 +11,39 @@ import React from 'react';
 
 //const API_URL = 'http://192.168.1.205:5000';
 const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
+const defaultImage = '@/public/images/average-user-sample.png';
 
 
 const screenHeight = Dimensions.get('window').height;
 const topElementsHeight = 100;
 
+
+const fetchImageWithAuth = async (profileImageUrl) => {
+    if (!profileImageUrl) return require('@/public/images/average-user-sample.png');
+
+    try {
+        const userToken = await AsyncStorage.getItem('userToken');
+        const fullImageUrl = `${API_URL}/${profileImageUrl}`;
+
+        const response = await fetch(fullImageUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${userToken}`,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error fetching image');
+        }
+
+        // Return the full URL to be used as the image source
+        console.log("it worked!");
+        return { uri: fullImageUrl, headers: { Authorization: `Bearer ${userToken}` } };
+    } catch (error) {
+        console.error('Error fetching image:', error);
+        return require('@/public/images/average-user-sample.png');
+    }
+};
 
 const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
     const slideAnim = useRef(new Animated.Value(0)).current;
@@ -81,35 +109,56 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
     );
 });
 
-// const UserItem = React.memo(({ user, onAdd }) => (
-//     <View>
-//         <TouchableOpacity onPress={() => onAdd(user.id)} style={styles.userItem}>
-//             <Image
-//                 source={require('@/public/images/average-user-sample.png')}
-//                 style={styles.userProfilePic}
-//             />
-//             <ThemedText style={styles.userName}>{user.name}</ThemedText>
-//         </TouchableOpacity>
-//         <ThemedText style={styles.addButtonText}>Add</ThemedText>
-//     </View>
 
-// ));
 
-const UserItem = React.memo(({ user, onSendRequest }) => (
-    <View style={styles.userItem}>
-        <Image
-            source={require('@/public/images/average-user-sample.png')}
-            style={styles.userProfilePic}
-        />
-        <ThemedText style={styles.userName}>{user.name}</ThemedText>
-        <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => onSendRequest(user.id)}
-        >
-            <ThemedText style={styles.addButtonText}>Add</ThemedText>
-        </TouchableOpacity>
-    </View>
-));
+
+const UserItem = React.memo(({ user, onSendRequest }) => {
+    const [imageSource, setImageSource] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isModalLoading, setIsModalLoading] = useState(false);
+
+
+    useEffect(() => {
+        const loadImage = async () => {
+            setIsLoading(true);
+            if (user.profileImageUrl) {
+                try {
+                    const source = await fetchImageWithAuth(user.profileImageUrl);
+                    setImageSource(source);
+                } catch (error) {
+                    console.error('Error loading image:', error);
+                    setImageSource(require('@/public/images/average-user-sample.png'));
+                }
+            } else {
+                setImageSource(require('@/public/images/average-user-sample.png'));
+            }
+            setIsLoading(false);
+        };
+        loadImage();
+    }, [user.profileImageUrl]);
+
+    return (
+        <View style={styles.userItem}>
+            <View style={styles.imageContainer}>
+                {isLoading ? (
+                    <ActivityIndicator size="small" color="#0000ff" />
+                ) : (
+                    <Image
+                        source={imageSource}
+                        style={styles.userProfilePic}
+                    />
+                )}
+            </View>
+            <ThemedText style={styles.userName}>{user.name}</ThemedText>
+            <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => onSendRequest(user.id)}
+            >
+                <ThemedText style={styles.addButtonText}>Add</ThemedText>
+            </TouchableOpacity>
+        </View>
+    );
+});
 
 export default function FriendScreen() {
     const [friends, setFriends] = useState([]);
@@ -124,6 +173,8 @@ export default function FriendScreen() {
     const [selectedFriendWorkouts, setSelectedFriendWorkouts] = useState([]);
     const [allFriendWorkouts, setAllFriendWorkouts] = useState([]);
     //const [isFriendsLoading, setIsFriendsLoading] = useState(true);
+    const [isModalLoading, setIsModalLoading] = useState(false);
+
 
 
 
@@ -136,6 +187,8 @@ export default function FriendScreen() {
     useEffect(() => {
         console.log('Users state updated:', users);
     }, [users]);
+
+
 
     const fetchRecentFriendWorkouts = async () => {
         try {
@@ -196,11 +249,11 @@ export default function FriendScreen() {
                     'Authorization': `Bearer ${userToken}`
                 }
             });
-    
+
             if (!response.ok) {
                 throw new Error('Failed to fetch friends');
             }
-    
+
             const data = await response.json();
             setFriends(data.friends);
         } catch (error) {
@@ -211,8 +264,8 @@ export default function FriendScreen() {
     };
 
     const fetchUsers = useCallback(async () => {
-        setIsLoading(true);
-        setSearchKeyword(''); // Reset search keyword
+        setIsModalLoading(true);
+        setSearchKeyword('');
 
         try {
             const userToken = await AsyncStorage.getItem('userToken');
@@ -229,13 +282,12 @@ export default function FriendScreen() {
             }
 
             const data = await response.json();
-            // The response is an array, so we can set it directly to the users state
             setUsers(data);
         } catch (error) {
             console.error('Error fetching users:', error);
             alert('Failed to fetch users. Please try again.');
         } finally {
-            setIsLoading(false);
+            setIsModalLoading(false);
         }
     }, []);
 
@@ -280,11 +332,9 @@ export default function FriendScreen() {
     }, []);
 
     const handleSearch = useCallback(async (keyword) => {
-        setIsLoading(true);
-        console.log("keyword" + keyword);
+        setIsModalLoading(true);
         try {
             const userToken = await AsyncStorage.getItem('userToken');
-            console.log(`${API_URL}/auth/getUsers?keyword=${encodeURIComponent(keyword)}`);
             const response = await fetch(`${API_URL}/auth/getusers?keyword=${encodeURIComponent(keyword)}`, {
                 method: 'GET',
                 headers: {
@@ -298,13 +348,12 @@ export default function FriendScreen() {
             }
 
             const data = await response.json();
-            console.log("data " + data);
             setUsers(data);
         } catch (error) {
             console.error('Error searching users:', error);
             alert('Failed to search users. Please try again.');
         } finally {
-            setIsLoading(false);
+            setIsModalLoading(false);
         }
     }, []);
 
@@ -357,26 +406,26 @@ export default function FriendScreen() {
             </ThemedView>
 
             {isLoading ? (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#0000ff" />
-            </View>
-        ) : friends.length > 0 ? (
-            <FlatList
-                data={friends}
-                renderItem={renderFriendItem}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={styles.friendList}
-                extraData={isEditMode}
-            />
-        ) : (
-            <View style={styles.defaultContainer}>
-                <Image
-                    source={require('@/public/images/training.png')}
-                    style={styles.defaultImage}
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#0000ff" />
+                </View>
+            ) : friends.length > 0 ? (
+                <FlatList
+                    data={friends}
+                    renderItem={renderFriendItem}
+                    keyExtractor={(item) => item.id.toString()}
+                    contentContainerStyle={styles.friendList}
+                    extraData={isEditMode}
                 />
-                <Text style={styles.defaultText}>Fitness is more fun with friends! Use the add button to cheer each other on and crush your goals together.</Text>
-            </View>
-        )}
+            ) : (
+                <View style={styles.defaultContainer}>
+                    <Image
+                        source={require('@/public/images/training.png')}
+                        style={styles.defaultImage}
+                    />
+                    <Text style={styles.defaultText}>Fitness is more fun with friends! Use the add button to cheer each other on and crush your goals together.</Text>
+                </View>
+            )}
 
             <Modal
                 visible={isAddModalVisible}
@@ -385,7 +434,6 @@ export default function FriendScreen() {
                 onRequestClose={() => setIsAddModalVisible(false)}
             >
                 <View style={styles.modalContainer}>
-
                     <View style={styles.modalContent}>
                         <ThemedText style={styles.modalTitle}>Add Friend</ThemedText>
                         <View style={styles.searchContainer}>
@@ -398,26 +446,23 @@ export default function FriendScreen() {
                                     if (text.length > 0) {
                                         handleSearch(text);
                                     } else if (text.length === 0) {
-                                        fetchUsers(); // Fetch all users when search is cleared
+                                        fetchUsers();
                                     }
                                 }}
                             />
                         </View>
-                        {isLoading ? (
-                            <ActivityIndicator size="large" color="#0000ff" />
+                        {isModalLoading ? (
+                            <View style={styles.loaderContainer}>
+                                <ActivityIndicator size="large" color="#0000ff" />
+                            </View>
                         ) : (
                             <FlatList
                                 data={users}
                                 renderItem={({ item }) => (
                                     <UserItem
                                         user={item}
-                                        // onAdd={(userId) => {
-                                        //     console.log(`Add friend with id: ${userId}`);
-                                        //     setIsAddModalVisible(false);
-                                        // }}
                                         onSendRequest={(userId) => {
                                             sendFriendRequest(userId);
-                                            // Optionally, you can close the modal or update the UI here
                                         }}
                                     />
                                 )}
@@ -429,7 +474,7 @@ export default function FriendScreen() {
                             style={styles.closeButton}
                             onPress={() => {
                                 setIsAddModalVisible(false);
-                                setSearchKeyword(''); // Clear search when closing modal
+                                setSearchKeyword('');
                             }}
                         >
                             <ThemedText style={styles.closeButtonText}>Close</ThemedText>
@@ -649,6 +694,14 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        height: 200, // Adjust this value as needed
     },
 
     // friendItem: {

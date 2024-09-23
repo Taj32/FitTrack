@@ -62,15 +62,53 @@ export default function LoginForm() {
     }
   };
 
+  const fetchImageURL = async (token: any) => {
+    try {
+      console.log('Fetching name with token:', token);
+      const response = await fetch(`${API_URL}/auth/getImageURL`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      console.log('Image fetch response status:', response.status);
+      const responseText = await response.text();
+      console.log('Image URL fetch response text:', responseText);
+
+      if (response.ok) {
+        const data = JSON.parse(responseText);
+        console.log('Parsed image data:', data);
+        return data.name;
+      } else {
+        console.error('Failed to fetch user image url');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching user image url:', error);
+      return null;
+    }
+  };
+
   const onLoggedIn = async (token) => {
     try {
       await AsyncStorage.setItem('userToken', token);
       console.log('Token stored successfully');
 
       const userName = await fetchName(token);
+      const userImageURL = await fetchImageURL(token);
       if (userName) {
         await AsyncStorage.setItem('userName', userName);
         console.log('Name stored successfully:', userName);
+      }
+
+      if(userImageURL) {
+        await AsyncStorage.setItem('userImageURL', userImageURL);
+        console.log('Storred image url successfully', userImageURL);
+      }
+      else {
+        await AsyncStorage.setItem('userImageURL', 'null');
+        console.log('Storred image url unsucessfuly set to null for now');
       }
 
       console.log('About to navigate to home');
@@ -97,7 +135,7 @@ export default function LoginForm() {
       .then(async res => {
         const textResponse = await res.text(); // Get the raw text response
         console.log('Raw response:', textResponse); // Log the raw response
-        
+
         if (!isLogin && res.status === 200) {
           setMessage("Please check your email to verify your account before logging in.");
         }

@@ -1,6 +1,5 @@
-import { Image, StyleSheet, Platform, View, TouchableOpacity, Text, ScrollView, useWindowDimensions, Dimensions, ActivityIndicator } from 'react-native';
+import { Image, StyleSheet, Platform, View, TouchableOpacity, Text, ScrollView, useWindowDimensions, Dimensions, ActivityIndicator, Alert } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -11,9 +10,7 @@ import { BicepEmoji } from '@/components/BicepEmoji';
 import { useFont } from "@shopify/react-native-skia";
 
 import inter from '@/public/fonts/SpaceMono-Regular.ttf'; //frontend/gym-app/public/fonts/inter-medium.ttf
-import { red } from 'react-native-reanimated/lib/typescript/reanimated2/Colors';
-//  @/public/fonts/inter-medium.ttf
-import Carousel from 'react-native-reanimated-carousel';
+
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import CarouselItem from '@/components/CarouselItem';
@@ -21,7 +18,8 @@ import CarouselItem from '@/components/CarouselItem';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
+import * as ImagePicker from 'expo-image-picker';
+import { Modal } from 'react-native';
 
 
 const DATA = Array.from({ length: 30 }, (_, i) => ({
@@ -56,6 +54,9 @@ export default function HomeScreen() {
     const [selectedTimeFrame, setSelectedTimeFrame] = useState('all');
     const [chartStates, setChartStates] = useState({});
 
+    const [showImageUploadModal, setShowImageUploadModal] = useState(false);
+
+
 
 
     const generateUniqueColors = (count) => {
@@ -87,6 +88,17 @@ export default function HomeScreen() {
     }, [recentWorkouts, workoutColors]);
 
     useEffect(() => {
+        const checkProfileImage = async () => {
+            const imageURL = await AsyncStorage.getItem('userImageURL');
+            if (imageURL === 'null') {
+                setShowImageUploadModal(true);
+            }
+        };
+
+        checkProfileImage();
+    }, []);
+
+    useEffect(() => {
         const fetchDataAndGroupDates = async () => {
             try {
                 await fetchUserName();
@@ -103,12 +115,6 @@ export default function HomeScreen() {
     }, []);
 
 
-
-    // useEffect(() => {
-    //     // Initial data load
-    //     setFilteredData(recentWorkouts);
-    // }, [recentWorkouts]);
-
     useEffect(() => {
         if (workoutDates.length > 0) {
             const grouped = groupDatesIntoStreaks(workoutDates);
@@ -118,6 +124,52 @@ export default function HomeScreen() {
             console.log("workoutdates: ", workoutDates);
         }
     }, [workoutDates]);
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            uploadImage(result.assets[0].uri);
+        }
+    };
+
+    const uploadImage = async (uri) => {
+        const formData = new FormData();
+        formData.append('image', {
+            uri: uri,
+            type: 'image/jpeg',
+            name: 'profile.jpg',
+        });
+
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_URL}/auth/upload-profile-image`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                await AsyncStorage.setItem('userImageURL', result.imageUrl);
+                setShowImageUploadModal(false);
+                Alert.alert('Success', 'Profile picture uploaded successfully!');
+            } else {
+                Alert.alert('Error', 'Failed to upload profile picture');
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            Alert.alert('Error', 'An error occurred while uploading the image');
+        }
+    };
 
     const filterDataByTimeFrame = (data, timeFrame) => {
         const currentDate = new Date();
@@ -404,77 +456,99 @@ export default function HomeScreen() {
     //console.log("markedDates: ", markedDates);
 
     return (
+        <>
+            <ParallaxScrollView
 
-        <ParallaxScrollView
-
-            headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-            headerImage={
-                <Image
-                    source={require('@/public/images/running-man.png')}
-                    style={styles.reactLogo}
-                />
-            }
-        >
-            <ThemedView style={styles.titleContainer}>
-                <ThemedText type="title">Hello, {userName || 'User'}...</ThemedText>
-                <BicepEmoji />
-            </ThemedView>
-
-
-            <Calendar
-                style={{
-                    borderColor: 'gray',
-                    height: 380,
-                    borderRadius: 30,
-                }}
-                onDayPress={day => {
-                    setSelected(day.dateString);
-                }}
-
-                markingType={'period'}
-                markedDates={markedDates}
+                headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+                headerImage={
+                    <Image
+                        source={require('@/public/images/running-man.png')}
+                        style={styles.reactLogo}
+                    />
+                }
             >
-
-            </Calendar>
-
-            <View
-                style={{
-                    borderBottomColor: 'black',
-                    borderBottomWidth: 1,
-                }}
-            />
-
-
-
-            {recentWorkouts.length > 0 ? (
-                recentWorkouts.map((workout, index) => (
-                    <WorkoutChart key={index} workout={workout} index={index} />
-                ))
-            ) : (
-                <ThemedView style={styles.noWorkoutsContainer}>
-                    <ThemedText style={styles.noWorkoutsText}>
-                        Start your fitness journey by adding your workouts!
-                    </ThemedText>
+                <ThemedView style={styles.titleContainer}>
+                    <ThemedText type="title">Hello, {userName || 'User'}...</ThemedText>
+                    <BicepEmoji />
                 </ThemedView>
-            )}
 
-            <View >
-                <StatusBar style="auto" />
-                <Animated.FlatList
-                    horizontal
-                    onScroll={onScrollHandler}
-                    data={items}
 
-                    keyExtractor={(item) => item.id}
-                    pagingEnabled={true}
-                    renderItem={({ item, index }) => {
-                        return <CarouselItem info={item} index={index} scrollX={scrollX} />;
+                <Calendar
+                    style={{
+                        borderColor: 'gray',
+                        height: 380,
+                        borderRadius: 30,
                     }}
-                    //decelerationRate="fast"
-                    showsHorizontalScrollIndicator={false}
+                    onDayPress={day => {
+                        setSelected(day.dateString);
+                    }}
+
+                    markingType={'period'}
+                    markedDates={markedDates}
+                >
+
+                </Calendar>
+
+                <View
+                    style={{
+                        borderBottomColor: 'black',
+                        borderBottomWidth: 1,
+                    }}
                 />
-            </View>
-        </ParallaxScrollView >
+
+
+
+                {recentWorkouts.length > 0 ? (
+                    recentWorkouts.map((workout, index) => (
+                        <WorkoutChart key={index} workout={workout} index={index} />
+                    ))
+                ) : (
+                    <ThemedView style={styles.noWorkoutsContainer}>
+                        <ThemedText style={styles.noWorkoutsText}>
+                            Start your fitness journey by adding your workouts!
+                        </ThemedText>
+                    </ThemedView>
+                )}
+
+                <View >
+                    <StatusBar style="auto" />
+                    <Animated.FlatList
+                        horizontal
+                        onScroll={onScrollHandler}
+                        data={items}
+
+                        keyExtractor={(item) => item.id}
+                        pagingEnabled={true}
+                        renderItem={({ item, index }) => {
+                            return <CarouselItem info={item} index={index} scrollX={scrollX} />;
+                        }}
+                        //decelerationRate="fast"
+                        showsHorizontalScrollIndicator={false}
+                    />
+                </View>
+            </ParallaxScrollView >
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={showImageUploadModal}
+                onRequestClose={() => setShowImageUploadModal(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Upload Profile Picture</Text>
+                        <Text style={styles.modalText}>Would you like to upload a profile picture?</Text>
+                        <TouchableOpacity style={styles.modalButton} onPress={pickImage}>
+                            <Text style={styles.modalButtonText}>Choose from Camera Roll</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.modalButton} onPress={() => setShowImageUploadModal(false)}>
+                            <Text style={styles.modalButtonText}>Maybe Later</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+        </>
+
     );
 }
 
@@ -545,6 +619,42 @@ const styles = StyleSheet.create({
     noWorkoutsText: {
         textAlign: 'center',
         fontSize: 18,
+    },
+
+
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    modalText: {
+        fontSize: 16,
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    modalButton: {
+        backgroundColor: '#007AFF',
+        padding: 10,
+        borderRadius: 5,
+        marginVertical: 5,
+        width: '100%',
+        alignItems: 'center',
+    },
+    modalButtonText: {
+        color: 'white',
+        fontSize: 16,
     },
 });
 

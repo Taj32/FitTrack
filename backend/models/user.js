@@ -28,6 +28,10 @@ const User = sequelize.define('users', {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
     },
+    profile_image_url: {
+        type: Sequelize.STRING,
+        allowNull: true,
+    },
 });
 
 export default User;

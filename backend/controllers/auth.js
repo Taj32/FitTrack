@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { User, Workout, Exercise, sequelize } from '../models/index.js';
 import { Op } from 'sequelize';  // Add this line
 import { sendVerificationEmail } from '../utils/emailService.js'; // Assuming you've created this
+import { containerClient } from '../utils/azureBlobConfig.js';
 //../utils/database.js';
 
 
@@ -184,6 +185,52 @@ const getName = (req, res, next) => {
         });
 };
 
+const getImageURL =  (req, res, next) => {
+    User.findOne({ where: { email: req.email } })
+        .then(dbUser => {
+            if (!dbUser) {
+                return res.status(404).json({ message: "user not found" });
+            }
+            res.status(200).json({ name: dbUser.profile_image_url });
+        })
+        .catch(err => {
+            console.log('error', err);
+            res.status(500).json({ message: "error retrieving user image url" });
+        });
+};
+
+const serveProfileImage = async (req, res) => {
+    try {
+        const { imageId } = req.params;
+        
+        // Verify that the requesting user has permission to access this image
+        // This could involve checking if the image belongs to the user or if the user has permission to view it
+        // For simplicity, we're just checking if the user is authenticated
+        
+        const blockBlobClient = containerClient.getBlockBlobClient(imageId);
+        
+        // Check if the blob exists
+        const exists = await blockBlobClient.exists();
+        if (!exists) {
+            return res.status(404).json({ message: "Image not found" });
+        }
+        
+        // Get the blob's properties
+        const properties = await blockBlobClient.getProperties();
+        
+        // Set the appropriate content type
+        res.setHeader('Content-Type', properties.contentType);
+        
+        // Download the blob to the response
+        await blockBlobClient.downloadToBuffer().then(buffer => {
+            res.send(buffer);
+        });
+    } catch (error) {
+        console.error('Error serving profile image:', error);
+        res.status(500).json({ message: "Error serving profile image" });
+    }
+};
+
 const getUsers = async (req, res, next) => {
     try {
         const { keyword } = req.query;
@@ -196,23 +243,60 @@ const getUsers = async (req, res, next) => {
                         [Op.like]: `%${keyword}%`
                     }
                 },
-                attributes: ['id', 'name', 'email'],
+                attributes: ['id', 'name', 'email', 'profile_image_url'],
                 limit: 50
             });
         } else {
             users = await User.findAll({
-                attributes: ['id', 'name', 'email'],
+                attributes: ['id', 'name', 'email', 'profile_image_url'],
                 limit: 50
             });
         }
 
-        res.status(200).json(users);
+        // Format the response to include only necessary information
+        const formattedUsers = users.map(user => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            profileImageUrl: user.profile_image_url ? `/auth/profile-image/${encodeURIComponent(user.profile_image_url.split('/').pop())}` : null
+        }));
+
+        res.status(200).json(formattedUsers);
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(500).json({ message: "Error fetching users" });
     }
 };
 
+const uploadProfileImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const user = await User.findOne({ where: { email: req.email } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const blobName = `${user.id}-${Date.now()}-${req.file.originalname}`;
+        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+        await blockBlobClient.upload(req.file.buffer, req.file.size);
+
+        const imageUrl = blockBlobClient.url;
+        user.profile_image_url = imageUrl;
+        await user.save();
+
+        res.status(200).json({ message: "Profile image uploaded successfully", imageUrl });
+    } catch (error) {
+        console.error('Error uploading profile image:', error);
+        res.status(500).json({ message: "Error uploading profile image" });
+    }
+};
+
 
 // At the end of auth.js
-export { signup, login, isAuth, getName, getUsers, verifyEmail };
+export { signup, login, isAuth,
+     getName, getUsers, verifyEmail,
+      uploadProfileImage, serveProfileImage, getImageURL };
