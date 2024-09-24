@@ -4,41 +4,70 @@ import { User, Friendship, sequelize } from '../models/index.js';
 import { Op } from 'sequelize';  // Add this line
 
 
+function formatDateForAzure(date) {
+    return date.getFullYear() +
+        '-' + String(date.getMonth() + 1).padStart(2, '0') +
+        '-' + String(date.getDate()).padStart(2, '0') +
+        ' ' + String(date.getHours()).padStart(2, '0') +
+        ':' + String(date.getMinutes()).padStart(2, '0') +
+        ':' + String(date.getSeconds()).padStart(2, '0') +
+        '.' + String(date.getMilliseconds()).padStart(3, '0');
+}
 
 export const sendFriendRequest = async (req, res) => {
-
     const { friendId } = req.body;
     const userEmail = req.email;
-    console.log("body: " + req.body);
-
-    const user = await User.findOne({ where: { email: userEmail } });
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-    }
-
+    console.log("body:", JSON.stringify(req.body));
+    console.log("User email:", userEmail);
 
     try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.id === friendId) {
+            return res.status(400).json({ message: 'You cannot send a friend request to yourself' });
+        }
+
         const existingRequest = await Friendship.findOne({
             where: {
-                user_id: user.id,
-                friend_id: friendId
+                [Op.or]: [
+                    { user_id: user.id, friend_id: friendId },
+                    { user_id: friendId, friend_id: user.id }
+                ]
             }
         });
 
         if (existingRequest) {
-            return res.status(400).json({ message: 'Friend request already sent' });
+            return res.status(400).json({ message: 'Friend request already exists or you are already friends' });
         }
+
+        console.log("Creating new friendship request...");
+
+        const now = new Date();
+        const formattedDate = formatDateForAzure(now);
+
 
         const newRequest = await Friendship.create({
             user_id: user.id,
             friend_id: friendId,
-            status: 'pending'
+            status: 'pending',
+            created_at: null,
+            updated_at: null
         });
+
+        console.log('New friendship request created:', newRequest.toJSON());
 
         res.status(201).json({ message: 'Friend request sent successfully', request: newRequest });
     } catch (error) {
         console.error('Error sending friend request:', error);
-        res.status(500).json({ message: 'Error sending friend request', error: error.message });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            message: 'Error sending friend request', 
+            error: error.toString(),
+            stack: error.stack
+        });
     }
 };
 
@@ -188,12 +217,12 @@ export const getFriends = async (req, res) => {
                 {
                     model: User,
                     as: 'user',
-                    attributes: ['id', 'name', 'email']
+                    attributes: ['id', 'name', 'email', 'profile_image_url']
                 },
                 {
                     model: User,
                     as: 'friend',
-                    attributes: ['id', 'name', 'email']
+                    attributes: ['id', 'name', 'email', 'profile_image_url']
                 }
             ]
         });
@@ -203,7 +232,8 @@ export const getFriends = async (req, res) => {
             return {
                 id: friend.id,
                 name: friend.name,
-                email: friend.email
+                email: friend.email,
+                profile_image_url: friend.profile_image_url ? `/auth/profile-image/${encodeURIComponent(friend.profile_image_url.split('/').pop())}` : null
             };
         });
 

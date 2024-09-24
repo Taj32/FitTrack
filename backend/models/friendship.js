@@ -29,21 +29,26 @@ const Friendship = sequelize.define('Friendship', {
         type: DataTypes.ENUM('pending', 'accepted', 'rejected'),
         defaultValue: 'pending',
         allowNull: false
+    },
+    created_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
+    updated_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
     }
 }, {
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-    underscored: true
+    timestamps: false,  // We're manually handling timestamps
+    underscored: true,
 });
 
-// Update these associations
-Friendship.belongsTo(User, { 
-    as: 'user', 
+Friendship.belongsTo(User, {
+    as: 'user',
     foreignKey: 'user_id'
 });
-Friendship.belongsTo(User, { 
-    as: 'friend', 
+Friendship.belongsTo(User, {
+    as: 'friend',
     foreignKey: 'friend_id'
 });
 

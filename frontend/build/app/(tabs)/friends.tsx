@@ -49,6 +49,10 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
     const slideAnim = useRef(new Animated.Value(0)).current;
     const [containerWidth, setContainerWidth] = useState(0);
 
+    const [imageSource, setImageSource] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isModalLoading, setIsModalLoading] = useState(false);
+
     useEffect(() => {
         Animated.spring(slideAnim, {
             toValue: isEditMode ? 1 : 0,
@@ -57,6 +61,30 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
             useNativeDriver: true,
         }).start();
     }, [isEditMode]);
+
+    useEffect(() => {
+        const loadImage = async () => {
+            console.log(friend.name);
+            console.log(friend.id);
+            console.log(friend.email);
+            console.log('**** - ', friend.profile_image_url);
+            setIsLoading(true);
+            if (friend.profile_image_url) {
+                try {
+                    console.log("trying to get friend image...");
+                    const source = await fetchImageWithAuth(friend.profile_image_url);
+                    setImageSource(source);
+                } catch (error) {
+                    console.error('Error loading image:', error);
+                    setImageSource(require('@/public/images/average-user-sample.png'));
+                }
+            } else {
+                setImageSource(require('@/public/images/average-user-sample.png'));
+            }
+            setIsLoading(false);
+        };
+        loadImage();
+    }, [friend.profile_image_url]);
 
     const buttonTranslateX = slideAnim.interpolate({
         inputRange: [0, 1],
@@ -98,7 +126,7 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
                     }
                 ]}>
                     <Image
-                        source={require('@/public/images/average-user-sample.png')}
+                        source={imageSource}
                         style={styles.profilePic}
                     />
                     <ThemedText style={styles.friendName}>{friend.name}</ThemedText>
@@ -108,9 +136,6 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
 
     );
 });
-
-
-
 
 const UserItem = React.memo(({ user, onSendRequest }) => {
     const [imageSource, setImageSource] = useState(null);
@@ -215,7 +240,12 @@ export default function FriendScreen() {
 
     const sendFriendRequest = async (friendId) => {
         try {
+            console.log('Sending friend request to friendId:', friendId);
             const userToken = await AsyncStorage.getItem('userToken');
+            if (!userToken) {
+                throw new Error('User token not found');
+            }
+
             const response = await fetch(`${API_URL}/friends/send-request`, {
                 method: 'POST',
                 headers: {
@@ -225,16 +255,18 @@ export default function FriendScreen() {
                 body: JSON.stringify({ friendId })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Failed to send friend request');
+                console.error('Server returned an error:', response.status, data);
+                throw new Error(data.message || 'Failed to send friend request');
             }
 
-            const data = await response.json();
-            console.log('Friend request sent:', data);
-            alert('Friend request sent successfully!');
+            console.log('Friend request sent successfully:', data);
+            Alert.alert('Success', 'Friend request sent successfully!');
         } catch (error) {
             console.error('Error sending friend request:', error);
-            alert('Failed to send friend request. Please try again.');
+            Alert.alert('Error', error.message || 'Failed to send friend request. Please try again.');
         }
     };
 
