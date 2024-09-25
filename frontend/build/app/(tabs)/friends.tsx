@@ -1,10 +1,14 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import {FriendRequestModal} from '@/components/FriendRequestModal';
+
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, Dimensions, FlatList, Alert, Modal, ActivityIndicator, TextInput } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+
 
 import { TouchableOpacity, Animated, LayoutAnimation } from 'react-native';
 import React from 'react';
@@ -200,6 +204,9 @@ export default function FriendScreen() {
     //const [isFriendsLoading, setIsFriendsLoading] = useState(true);
     const [isModalLoading, setIsModalLoading] = useState(false);
 
+    const [pendingRequests, setPendingRequests] = useState([]);
+    const [currentRequest, setCurrentRequest] = useState(null);
+
 
 
 
@@ -207,6 +214,7 @@ export default function FriendScreen() {
     useEffect(() => {
         fetchFriends();
         fetchRecentFriendWorkouts();
+        // fetchPendingRequests();
     }, []);
 
     useEffect(() => {
@@ -214,6 +222,39 @@ export default function FriendScreen() {
     }, [users]);
 
 
+    // const fetchPendingRequests = async () => {
+    //     try {
+    //         const userToken = await AsyncStorage.getItem('userToken');
+    //         const response = await fetch(`${API_URL}/friends/getPendingRequests`, {
+    //             method: 'GET',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //                 'Authorization': `Bearer ${userToken}`
+    //             }
+    //         });
+    
+    //         if (!response.ok) {
+    //             throw new Error('Failed to fetch recent friend requests');
+    //         }
+    
+    //         const data = await response.json();
+    //         console.log("Got data!", data);
+    
+    //         // Set pending requests if data is a valid array
+    //         if (Array.isArray(data) && data.length > 0) {
+    //             setPendingRequests(data);
+    //             setCurrentRequest(data[0]); // Set the first request
+    //         } else {
+    //             setPendingRequests([]); // In case there's no pending request
+    //             setCurrentRequest(null);
+    //         }
+    //     }
+    //     catch (error) {
+    //         console.error('Error fetching friend requests:', error);
+    //         alert('Failed to fetch recent friend requests. Please try again.');
+    //     }
+    // };
+    
 
     const fetchRecentFriendWorkouts = async () => {
         try {
@@ -409,6 +450,10 @@ export default function FriendScreen() {
         />
     ), [isEditMode, removeFriend, allFriendWorkouts]);
 
+    const refreshFriendList = useCallback(() => {
+        fetchFriends();
+      }, []);
+
     return (
         <SafeAreaView style={styles.container}>
             <ThemedView style={styles.buttonContainer}>
@@ -543,6 +588,8 @@ export default function FriendScreen() {
                     </View>
                 </View>
             </Modal>
+
+            <FriendRequestModal onRequestHandled={refreshFriendList} />
         </SafeAreaView>
     );
 }

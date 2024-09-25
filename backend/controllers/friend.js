@@ -1,5 +1,5 @@
 import { request } from 'express';
-import { User, Friendship, sequelize } from '../models/index.js';
+import { User, Friendship, sequelize, Workout } from '../models/index.js';
 // import sequelize from '../models/index.js';
 import { Op } from 'sequelize';  // Add this line
 
@@ -63,8 +63,8 @@ export const sendFriendRequest = async (req, res) => {
     } catch (error) {
         console.error('Error sending friend request:', error);
         console.error('Error stack:', error.stack);
-        res.status(500).json({ 
-            message: 'Error sending friend request', 
+        res.status(500).json({
+            message: 'Error sending friend request',
             error: error.toString(),
             stack: error.stack
         });
@@ -117,7 +117,7 @@ export const rejectFriendRequest = async (req, res) => {
 
         const request = await Friendship.findOne({
             where: {
-                id: requestId,
+                user_id: requestId,
                 friend_id: user.id,
                 status: 'pending'
             }
@@ -137,10 +137,52 @@ export const rejectFriendRequest = async (req, res) => {
     }
 };
 
+export const getFriendRequests = async (req, res) => {
+    const { requestId } = req.params;
+    const userEmail = req.email;
+
+    try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Find all requests where the user.id matches friend.id and is pending
+        // then put it in a list where it takes the request ID
+
+        const pendingRequests = await Friendship.findAll({
+            where: {
+                friend_id: user.id,
+                status: 'pending'
+            },
+            include: [{
+                model: User,
+                as: 'user',
+                attributes: ['name']
+            }]
+
+        });
+
+        const formattedRequests = pendingRequests.map(request => ({
+            requestId: request.id,
+            requesterId: request.user_id,
+            requesterName: request.user.name,
+            //requesterEmail: request.user.email
+        }));
+
+
+        res.json(formattedRequests);
+
+    } catch (error) {
+        console.error('Error getting friend requests:', error);
+        res.status(500).json({ message: 'Error getting friend request', error: error.message });
+    }
+}
+
 export const removeFriend = async (req, res) => {
     const { requestId } = req.params;
     const userEmail = req.email;
-    
+
 
     try {
         const user = await User.findOne({ where: { email: userEmail } });
@@ -183,11 +225,11 @@ export const removeFriend = async (req, res) => {
             return res.status(404).json({ message: 'Friend not found' });
         }
 
-         // Remove the friendship
-         await friend.destroy({ transaction: t });
+        // Remove the friendship
+        await friend.destroy({ transaction: t });
 
-         // Commit the transaction
-         await t.commit();
+        // Commit the transaction
+        await t.commit();
 
         res.status(200).json({ message: 'Friend was deleted' });
     } catch (error) {
@@ -243,3 +285,56 @@ export const getFriends = async (req, res) => {
         res.status(500).json({ message: 'Error getting friends', error: error.message });
     }
 };
+
+export const sendWorkoutReminder = async (req, res) => {
+    const { friendId } = req.params;
+    const userEmail = req.email;
+
+    try {
+        const user = await User.findOne({ where: { email: userEmail } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if the friendId is actually a friend
+        const friendship = await Friendship.findOne({
+            where: {
+                [Op.or]: [
+                    { user_id: user.id, friend_id: friendId },
+                    { user_id: friendId, friend_id: user.id }
+                ],
+                status: 'accepted'
+            }
+        });
+
+        if (!friendship) {
+            return res.status(400).json({ message: 'This user is not your friend' });
+        }
+
+        // Check if the friend has done a workout today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const friendWorkoutToday = await Workout.findOne({
+            where: {
+                user_id: friendId,
+                date_created: {
+                    [Op.gte]: today
+                }
+            }
+        });
+
+        if (friendWorkoutToday) {
+            return res.status(400).json({ message: 'Your friend has already worked out today' });
+        }
+
+        // TODO: Implement push notification logic here
+        // For now, we'll just return a success message
+
+        res.status(200).json({ message: 'Workout reminder sent successfully' });
+    } catch (error) {
+        console.error('Error sending workout reminder:', error);
+        res.status(500).json({ message: 'Error sending workout reminder', error: error.message });
+    }
+};
+
