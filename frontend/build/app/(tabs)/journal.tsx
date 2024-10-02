@@ -9,19 +9,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Animated, } from 'react-native';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
-
-
-
 import { LayoutAnimation } from 'react-native';
-
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 
-//const API_URL = 'http://192.168.1.205:5000';
 const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
-
-
 
 export default function JournalScreen() {
 
@@ -32,8 +24,6 @@ export default function JournalScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [animatedValues, setAnimatedValues] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-
-
 
   useFocusEffect(
     useCallback(() => {
@@ -124,15 +114,8 @@ export default function JournalScreen() {
         // Remove the workout from the local state
         console.log("deleted the workout!");
         setWorkouts(workouts.filter(workout => workout.id !== workoutId));
-      }, 300); // Adjust this timeout to match your edit mode animation duration
+      }, 300); // Adjust timeout to desired
 
-      // // Configure the animation
-      // LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
-      // // Remove the workout from the local state
-      // console.log("deleted the workout!");
-      // setWorkouts(workouts.filter(workout => workout.id !== workoutId));
-      // setEditMode(false);
     } catch (error) {
       console.error('Error deleting workout:', error);
     }
@@ -321,7 +304,6 @@ export default function JournalScreen() {
         <ScrollView>
           <ThemedView style={styles.titleContainer}>
             <ThemedText type="title" >Log</ThemedText>
-            {/* <Ionicons name="fitness" size={50} color="black" /> */}
           </ThemedView>
 
           {Object.entries(groupedWorkouts).map(([monthYear, monthWorkouts]) => (
@@ -382,7 +364,6 @@ export default function JournalScreen() {
                                 {`${exercise.sets}x ${exercise.name}`}
                               </Text>
                             ))
-                            // <View></View>
                           ) : (
                             <Text style={styles.incompleteWorkout}>Incomplete workout</Text>
                           )}
@@ -520,7 +501,6 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     marginHorizontal: 15,
     overflow: 'hidden',
-    //columnGap: 20,
   },
   deleteButtonContainer: {
     position: 'absolute',
@@ -561,11 +541,8 @@ const styles = StyleSheet.create({
   },
   setsContainer: {
     flexDirection: 'column',
-    //flexWrap: 'wrap',
-    //justifyContent: 'flex-start',
   },
   setDetails: {
-   // marginRight: 10,
     marginBottom: 10,
   },
   setText: {

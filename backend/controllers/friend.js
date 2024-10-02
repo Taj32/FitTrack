@@ -2,6 +2,8 @@ import { request } from 'express';
 import { User, Friendship, sequelize, Workout } from '../models/index.js';
 // import sequelize from '../models/index.js';
 import { Op } from 'sequelize';  // Add this line
+import { sendWorkoutReminderEmail } from '../utils/emailService.js';
+
 
 
 function formatDateForAzure(date) {
@@ -296,6 +298,11 @@ export const sendWorkoutReminder = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        const friend = await User.findByPk(friendId);
+        if (!friend) {
+            return res.status(404).json({ message: 'Friend not found' });
+        }
+
         // Check if the friendId is actually a friend
         const friendship = await Friendship.findOne({
             where: {
@@ -328,13 +335,12 @@ export const sendWorkoutReminder = async (req, res) => {
             return res.status(400).json({ message: 'Your friend has already worked out today' });
         }
 
-        // TODO: Implement push notification logic here
-        // For now, we'll just return a success message
+        // Send workout reminder email
+        await sendWorkoutReminderEmail(friend.email, user.name);
 
-        res.status(200).json({ message: 'Workout reminder sent successfully' });
+        res.status(200).json({ message: 'Workout reminder email sent successfully' });
     } catch (error) {
         console.error('Error sending workout reminder:', error);
         res.status(500).json({ message: 'Error sending workout reminder', error: error.message });
     }
 };
-

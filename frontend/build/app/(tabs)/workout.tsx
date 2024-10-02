@@ -4,12 +4,9 @@ import { StyleSheet, Image, Platform, TouchableOpacity, TextInput, FlatList, Mod
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import React, { SetStateAction, useEffect, useState } from 'react';
-import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-//const API_URL = 'http://192.168.1.205:5000';
 const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
-
 
 export default function WorkoutScreen() {
 
@@ -36,7 +33,6 @@ export default function WorkoutScreen() {
 
 
   const [userToken, setUserToken] = useState<string | null>(null);
-
   const [showModal, setShowModal] = useState(false);
   const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -44,10 +40,8 @@ export default function WorkoutScreen() {
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [exerciseData, setExerciseData] = useState<{ [exerciseId: number]: { [setIndex: number]: { weight: string, reps: string } } }>({});
   const [isLoading, setIsLoading] = useState(true);
-
   const [isEditMode, setIsEditMode] = useState(false);
   const [animatedValues, setAnimatedValues] = useState({});
-
 
 
   const handleAddWorkoutPress = () => {
@@ -55,7 +49,7 @@ export default function WorkoutScreen() {
   };
 
   useEffect(() => {
-    console.log("------ workout.tsx starts here.. ----");
+    // console.log("------ workout.tsx starts here.. ----");
     const getToken = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
@@ -166,10 +160,6 @@ export default function WorkoutScreen() {
     }
   };
 
-
-
-
-
   const addWorkoutTemp = async (payload: { name: string; exercises: { name: string; sets: number; }[]; }) => {
     try {
 
@@ -218,50 +208,6 @@ export default function WorkoutScreen() {
     }
   };
 
-  //For the initally created workouts --> dummy workout
-  const addWorkout = async (workoutName: string, exercises: { name: string; sets: number }[]) => {
-    try {
-      const workoutData = {
-        name: workoutName,
-        exercises: exercises
-      };
-
-      console.log('Sending workout data:', JSON.stringify(workoutData));
-      console.log('User token:', userToken);
-
-      if (!userToken) {
-        throw new Error('User token is missing');
-      }
-
-      const response = await fetch(`${API_URL}/workouts/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}`
-        },
-        body: JSON.stringify(workoutData)
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      await fetchWorkouts();
-
-      if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
-      }
-
-      return JSON.parse(responseText);
-    } catch (error) {
-      console.error('Error adding workout:', error);
-      throw error;
-    }
-  };
-
-
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedWorkout(null);
@@ -307,7 +253,6 @@ export default function WorkoutScreen() {
       });
 
       const data = await response.json();
-
       console.log('Fetched data:', JSON.stringify(data, null, 2));
 
       const uniqueWorkouts = data.filter(
@@ -341,15 +286,12 @@ export default function WorkoutScreen() {
     setSelectedWorkout(uniqueWorkout);
     setModalVisible(true);
 
-
-
     // Print the unique workout details
     console.log('reference id', workout.id);
     console.log('Unique Workout:', uniqueWorkout);
   };
 
   // dynamic 
-
   const handleInputChange = (exerciseId: number, setIndex: number, field: string, value: string) => {
     setExerciseData(prevState => {
       const updatedExercise = { ...prevState[exerciseId], [setIndex]: { ...prevState[exerciseId]?.[setIndex], [field]: value } };
@@ -368,10 +310,6 @@ export default function WorkoutScreen() {
   };
 
   const handleSave = async () => {
-    // if (!areAllInputsFilled()) {
-    //   alert('Please fill in all weight and rep fields before saving.');
-    //   return;
-    // }
 
     if (selectedWorkout) {
       const workoutPayload = {
@@ -563,12 +501,7 @@ export default function WorkoutScreen() {
         visible={showAddWorkoutModal}
         onClose={() => setShowAddWorkoutModal(false)}
         onAdd={async (name, exercises) => {
-          // const workoutId = await addWorkout(name, exercises);
-          // if (workoutId) {
-          //   // Refresh workouts list here
-          //   // You might want to fetch the updated list from the server
-          //   // or add the new workout to the existing list
-          // }
+
           await fetchWorkouts();
 
         }}
@@ -578,45 +511,6 @@ export default function WorkoutScreen() {
         <ThemedText type="title" >Start Workout</ThemedText>
         <Ionicons name="fitness" size={50} color="black" />
       </ThemedView>
-
-      {/* Dynamic cases */}
-      {/* <FlatList
-        data={workouts}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleWorkoutPress(item)}>
-            <View style={styles.workoutContainer}>
-              <Text style={styles.workoutOptions}>{item.name}</Text>
-              <Ionicons name="caret-forward" size={16} color="gray" />
-            </View>
-          </TouchableOpacity>
-        )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListHeaderComponent={() => <View style={styles.separator} />}
-        ListFooterComponent={() => <View style={styles.separator} />}
-      ></FlatList> */}
-
-      {/* {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
-        </View>
-      ) : (
-        <FlatList
-          data={workouts}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => handleWorkoutPress(item)}>
-              <View style={styles.workoutContainer}>
-                <Text style={styles.workoutOptions}>{item.name}</Text>
-                <Ionicons name="caret-forward" size={16} color="gray" />
-              </View>
-            </TouchableOpacity>
-          )}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          ListHeaderComponent={() => <View style={styles.separator} />}
-          ListFooterComponent={() => <View style={styles.separator} />}
-        />
-      )} */}
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -737,27 +631,21 @@ export default function WorkoutScreen() {
                     );
                   });
                 })()}
-                {/* <Button title="Save" onPress={handleSave} disabled={!areAllInputsFilled} /> */}
 
               </ScrollView>
 
               <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                 <ThemedText>Save</ThemedText>
               </TouchableOpacity>
-              {/* <Button title="Save" onPress={handleSave} /> */}
             </ThemedView>
           </SafeAreaView>
         </Modal>
       )}
     </SafeAreaView>
-
-
   );
 }
 
-
 const styles = StyleSheet.create({
-
   container: {
     backgroundColor: '#f2f1f6',
     flex: 1,
@@ -947,34 +835,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 16,
   },
-
-  // exerciseInput: {
-  //   flexDirection: 'row',
-  //   marginBottom: 10,
-  // },
-  // exerciseNameInput: {
-  //   borderWidth: 1,
-  //   borderColor: '#ccc',
-  //   borderRadius: 5,
-  //   padding: 10,
-  //   marginBottom: 5,
-  // },
-  // setsContainer: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  // },
-  // setsLabel: {
-  //   marginRight: 10,
-  // },
-  // setsInput: {
-  //   borderWidth: 1,
-  //   borderColor: '#ccc',
-  //   borderRadius: 5,
-  //   padding: 10,
-  //   flex: 1,
-  // },
-
-
   exerciseInput: {
     flexDirection: 'row',
     alignItems: 'center',

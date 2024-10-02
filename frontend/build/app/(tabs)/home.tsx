@@ -1,64 +1,38 @@
 import { Image, StyleSheet, Platform, View, TouchableOpacity, Text, ScrollView, useWindowDimensions, Dimensions, ActivityIndicator, Alert } from 'react-native';
-
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { CartesianChart, CartesianChartRenderArg, Line } from "victory-native";
 import { LineChart } from "react-native-gifted-charts";
 import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { BicepEmoji } from '@/components/BicepEmoji';
 import { useFont } from "@shopify/react-native-skia";
-
 import inter from '@/public/fonts/SpaceMono-Regular.ttf'; //frontend/gym-app/public/fonts/inter-medium.ttf
-
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import { StatusBar } from 'expo-status-bar';
-import CarouselItem from '@/components/CarouselItem';
-
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as ImagePicker from 'expo-image-picker';
 import { Modal } from 'react-native';
 
-
-const DATA = Array.from({ length: 30 }, (_, i) => ({
-    day: i,
-    highTmp: 40 + 30 * Math.random(),
-}));
-
-//const API_URL = 'http://192.168.1.205:5000';
 const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
 
 // types
 type WorkoutDate = string;
 
-
-
 export default function HomeScreen() {
-    const font = useFont(inter, 8);
-    const ref = useRef(null)
-    const width = Dimensions.get('window').width //window').width;
 
     const [selected, setSelected] = useState('');
     const [userName, setUserName] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [benchPressData, setBenchPressData] = useState([]);
     const [recentWorkouts, setRecentWorkouts] = useState([]);
     const [workoutDates, setWorkoutDates] = useState<WorkoutDate[]>([]);
     const [groupedStreaks, setGroupedStreaks] = useState<string[][]>([]);
-
-    const [isCalendarLoading, setIsCalendarLoading] = useState(true);
-
     const [filteredData, setFilteredData] = useState([]);
     const [selectedTimeFrame, setSelectedTimeFrame] = useState('all');
     const [chartStates, setChartStates] = useState({});
-
     const [showImageUploadModal, setShowImageUploadModal] = useState(false);
 
-
-
-
+    
     const generateUniqueColors = (count) => {
         const goldenRatio = 0.618033988749895;
         const saturation = 0.75; // Lowered saturation for softer colors
@@ -226,7 +200,6 @@ export default function HomeScreen() {
         });
     };
 
-
     const fetchUserName = async () => {
         try {
             const storedName = await AsyncStorage.getItem('userName');
@@ -293,13 +266,8 @@ export default function HomeScreen() {
             setRecentWorkouts(data);
         } catch (error) {
             console.error('Error fetching recent workouts:', error);
-        } finally {
-            //console.log("done loading!");
-            //setIsLoading(false);
         }
     };
-
-
 
     const formatStreaks = (streaks: string[][]) => {
         const markedDates = {};
@@ -328,14 +296,6 @@ export default function HomeScreen() {
     const markedDates = useMemo(() => {
         return formatStreaks(groupedStreaks);
     }, [groupedStreaks]);
-
-    // if (isLoading) {
-    //     return (
-    //         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    //             <ActivityIndicator size="large" color="0000ff" />
-    //         </View>
-    //     );
-    // }
 
     const options = ["Week", "Month", "6 Months", "Year"]
 
@@ -416,8 +376,6 @@ export default function HomeScreen() {
         );
     };
 
-
-
     if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -451,10 +409,6 @@ export default function HomeScreen() {
         return streaks;
     }
 
-    //const markedDates = formatStreaks(groupedStreaks);
-    //console.log("groupedStreaks", groupedStreaks);
-    //console.log("markedDates: ", markedDates);
-
     return (
         <>
             <ParallaxScrollView
@@ -471,7 +425,6 @@ export default function HomeScreen() {
                     <ThemedText type="title">Hello, {userName || 'User'}...</ThemedText>
                     <BicepEmoji />
                 </ThemedView>
-
 
                 <Calendar
                     style={{
@@ -510,22 +463,6 @@ export default function HomeScreen() {
                     </ThemedView>
                 )}
 
-                <View >
-                    <StatusBar style="auto" />
-                    <Animated.FlatList
-                        horizontal
-                        onScroll={onScrollHandler}
-                        data={items}
-
-                        keyExtractor={(item) => item.id}
-                        pagingEnabled={true}
-                        renderItem={({ item, index }) => {
-                            return <CarouselItem info={item} index={index} scrollX={scrollX} />;
-                        }}
-                        //decelerationRate="fast"
-                        showsHorizontalScrollIndicator={false}
-                    />
-                </View>
             </ParallaxScrollView >
 
             <Modal

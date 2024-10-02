@@ -1,26 +1,16 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import {FriendRequestModal} from '@/components/FriendRequestModal';
-
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Image, Platform, SafeAreaView, View, Text, ScrollView, Dimensions, FlatList, Alert, Modal, ActivityIndicator, TextInput } from 'react-native';
-import { SvgUri } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-
-
 import { TouchableOpacity, Animated, LayoutAnimation } from 'react-native';
 import React from 'react';
 
-//const API_URL = 'http://192.168.1.205:5000';
 const API_URL = 'https://gym-api-hwbqf0gpfwfnh4av.eastus-01.azurewebsites.net';
-const defaultImage = '@/public/images/average-user-sample.png';
-
-
 const screenHeight = Dimensions.get('window').height;
 const topElementsHeight = 100;
-
 
 const fetchImageWithAuth = async (profileImageUrl) => {
     if (!profileImageUrl) return require('@/public/images/average-user-sample.png');
@@ -43,6 +33,7 @@ const fetchImageWithAuth = async (profileImageUrl) => {
         // Return the full URL to be used as the image source
         console.log("it worked!");
         return { uri: fullImageUrl, headers: { Authorization: `Bearer ${userToken}` } };
+
     } catch (error) {
         console.error('Error fetching image:', error);
         return require('@/public/images/average-user-sample.png');
@@ -55,7 +46,6 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
 
     const [imageSource, setImageSource] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalLoading, setIsModalLoading] = useState(false);
 
     useEffect(() => {
         Animated.spring(slideAnim, {
@@ -144,8 +134,6 @@ const FriendItem = React.memo(({ friend, onRemove, isEditMode, onPress }) => {
 const UserItem = React.memo(({ user, onSendRequest }) => {
     const [imageSource, setImageSource] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalLoading, setIsModalLoading] = useState(false);
-
 
     useEffect(() => {
         const loadImage = async () => {
@@ -201,60 +189,19 @@ export default function FriendScreen() {
     const [isWorkoutModalVisible, setIsWorkoutModalVisible] = useState(false);
     const [selectedFriendWorkouts, setSelectedFriendWorkouts] = useState([]);
     const [allFriendWorkouts, setAllFriendWorkouts] = useState([]);
-    //const [isFriendsLoading, setIsFriendsLoading] = useState(true);
     const [isModalLoading, setIsModalLoading] = useState(false);
-
-    const [pendingRequests, setPendingRequests] = useState([]);
-    const [currentRequest, setCurrentRequest] = useState(null);
-
-
-
+    const [selectedFriendId, setSelectedFriendId] = useState(null);
+    const [isReminderSending, setIsReminderSending] = useState(false);
 
 
     useEffect(() => {
         fetchFriends();
         fetchRecentFriendWorkouts();
-        // fetchPendingRequests();
     }, []);
 
     useEffect(() => {
         console.log('Users state updated:', users);
     }, [users]);
-
-
-    // const fetchPendingRequests = async () => {
-    //     try {
-    //         const userToken = await AsyncStorage.getItem('userToken');
-    //         const response = await fetch(`${API_URL}/friends/getPendingRequests`, {
-    //             method: 'GET',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 'Authorization': `Bearer ${userToken}`
-    //             }
-    //         });
-    
-    //         if (!response.ok) {
-    //             throw new Error('Failed to fetch recent friend requests');
-    //         }
-    
-    //         const data = await response.json();
-    //         console.log("Got data!", data);
-    
-    //         // Set pending requests if data is a valid array
-    //         if (Array.isArray(data) && data.length > 0) {
-    //             setPendingRequests(data);
-    //             setCurrentRequest(data[0]); // Set the first request
-    //         } else {
-    //             setPendingRequests([]); // In case there's no pending request
-    //             setCurrentRequest(null);
-    //         }
-    //     }
-    //     catch (error) {
-    //         console.error('Error fetching friend requests:', error);
-    //         alert('Failed to fetch recent friend requests. Please try again.');
-    //     }
-    // };
-    
 
     const fetchRecentFriendWorkouts = async () => {
         try {
@@ -333,6 +280,32 @@ export default function FriendScreen() {
             console.error('Error fetching friends:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const sendWorkoutReminder = async (friendId) => {
+        setIsReminderSending(true);
+        try {
+            const userToken = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_URL}/friends/send-workout-reminder/${friendId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to send workout reminder');
+            }
+
+            Alert.alert('Success', 'Workout reminder sent successfully!');
+        } catch (error) {
+            console.error('Error sending workout reminder:', error);
+            Alert.alert('Error', error.message || 'Failed to send workout reminder. Please try again.');
+        } finally {
+            setIsReminderSending(false);
         }
     };
 
@@ -430,8 +403,6 @@ export default function FriendScreen() {
         }
     }, []);
 
-
-
     const toggleEditMode = useCallback(() => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setIsEditMode(prev => !prev);
@@ -443,6 +414,7 @@ export default function FriendScreen() {
             onRemove={removeFriend}
             isEditMode={isEditMode}
             onPress={(friendId) => {
+                setSelectedFriendId(friendId);
                 const friendWorkouts = allFriendWorkouts.filter(workout => workout.user_id === friendId);
                 setSelectedFriendWorkouts(friendWorkouts);
                 setIsWorkoutModalVisible(true);
@@ -580,6 +552,15 @@ export default function FriendScreen() {
                             ListEmptyComponent={<ThemedText>No recent workouts found</ThemedText>}
                         />
                         <TouchableOpacity
+                            style={[styles.reminderButton, isReminderSending && styles.disabledButton]}
+                            onPress={() => sendWorkoutReminder(selectedFriendId)}
+                            disabled={isReminderSending}
+                        >
+                            <ThemedText style={styles.reminderButtonText}>
+                                {isReminderSending ? 'Sending...' : 'Send Workout Reminder'}
+                            </ThemedText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
                             style={styles.closeButton}
                             onPress={() => setIsWorkoutModalVisible(false)}
                         >
@@ -600,7 +581,6 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     friendList: {
-        //backgroundColor: '#f2f1f6',
         paddingHorizontal: 16,
         paddingTop: 16,
     },
@@ -634,14 +614,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     defaultImage: {
-        //width: '100%',
-        //height: '66%',
         width: "60%",
         height: "60%",
         bottom: 0,
         borderColor: 'red',
         marginBottom: 5,
-        //borderWidth: 5,
         resizeMode: 'contain',
     },
     defaultText: {
@@ -703,8 +680,6 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 14,
     },
-
-
     modalContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -782,10 +757,19 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 200, // Adjust this value as needed
     },
-
-    // friendItem: {
-    //     flexDirection: 'row',
-    //     alignItems: 'center',
-    //     paddingVertical: 8,
-    // },
+    reminderButton: {
+        backgroundColor: '#4CAF50',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+        marginTop: 15,
+    },
+    reminderButtonText: {
+        color: 'white',
+        fontSize: 16,
+        textAlign: 'center',
+    },
+    disabledButton: {
+        opacity: 0.5,
+    },
 });
